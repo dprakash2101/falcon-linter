@@ -35,17 +35,17 @@ export class PromptBuilder {
     if (!['line', 'file'].includes(reviewLevel)) {
       throw new Error('reviewLevel must be either "line" or "file"');
     }
-    if (!detailedDiff || !Array.isArray(detailedDiff) || detailedDiff.length === 0) {
+    if (!detailedDiff.length) {
       throw new Error('detailedDiff must be a non-empty array');
     }
   }
 
   private escapeCode(code: string): string {
-    // Escape triple backticks only to avoid breaking markdown blocks
-    return code.replace(/```/g, '\\`\\`\\`');
+    // Escape backticks so we can safely wrap code in markdown
+    return code.replace(/`/g, '\\`');
   }
 
-  build(): string {
+  public build(): string {
     const schemaDefinition = `
 interface ReviewComment {
   line?: number;
@@ -69,76 +69,53 @@ interface StructuredReview {
 `.trim();
 
     const preamble = `
-You are a **Senior Software Engineer** reviewing a pull request (PR) created by a **Junior Developer**.
+You are a senior software engineer performing a code review.  
+Provide **only** structured feedback in JSON following the given schema.  
+Do **not** reprint the full original or modified code blocks—use them only to inform your comments.
 
-### 🎯 Goal
-Provide **constructive, actionable, and educational** feedback to improve code quality and developer skills.
+You will be given, for each file:
+- filePath: path to the file.
+- oldContent: full file content before the change.
+- newContent: full file content after the change.
+- fileDiff: a unified diff between oldContent and newContent.
+- changedLines: list of changed line numbers in the new file.
 
-### 🧭 Instructions
-- **Review Level**: \`${this.reviewLevel.toUpperCase()}\`
-- Focus on high-impact issues first: \`SECURITY\`, \`PERFORMANCE\`, and \`BUG\`.
-- Max 5 comments per file.
-- Feedback must include:
-  - \`line\` (optional, if in line mode)
-  - \`currentCode\`: problematic code snippet (max 5 lines)
-  - \`suggestedCode\`: improved version (max 5 lines)
-  - \`reason\`: explanation (max 100 words)
-  - \`category\` and \`severity\` as per the schema
-- Provide 2–3 specific praises under \`positiveFeedback\`
-- Output must conform exactly to the schema below. Do not hallucinate fields or values.
+Use **only** fileDiff to identify changes.  
+Use oldContent/newContent only to verify correctness.  
 
-### 📄 JSON Output Schema
+Return JSON matching this schema exactly (no extra fields, no markdown):
 ${schemaDefinition}
 `.trim();
 
     const prContext = `
-## 📝 Pull Request Context
-
-### 🔖 Title
+Pull Request Title:
 ${this.escapeCode(this.prTitle)}
 
-### 🧾 Description
+Pull Request Description:
 ${this.escapeCode(this.prBody)}
 `.trim();
 
     const userContext = `
-## 👤 User Input
-
-### 🧠 Prompt
+User Prompt:
 ${this.escapeCode(this.userPrompt)}
 
-### 📘 Style Guide
+Style Guide:
 ${this.escapeCode(this.styleGuide)}
 `.trim();
 
-    const sortedFiles = [...this.detailedDiff].sort((a, b) =>
-      a.filePath.localeCompare(b.filePath)
-    );
+    // Map DetailedFileChange into prompt objects
+    const fileObjects = this.detailedDiff
+      .sort((a, b) => a.filePath.localeCompare(b.filePath))
+      .map(f => ({
+        filePath: f.filePath,
+        oldContent: f.oldContent || '',
+        newContent: f.newContent || '',
+        fileDiff: f.fileDiff || '',
+        changedLines: f.changedLines || []
+      }));
 
-    const detailedCodeContext = sortedFiles.map(file => {
-      const sortedLines = [...(file.changedLines || [])].sort((a, b) => a - b);
-      return `
-## 📂 File: \`${this.escapeCode(file.filePath)}\` (Status: ${file.status || 'UNKNOWN'})
-
-### 🔍 Original Code
-\`\`\`ts
-${this.escapeCode(file.oldContent || '').trim()}
-\`\`\`
-
-### ✏️ Modified Code
-\`\`\`ts
-${this.escapeCode(file.newContent || '').trim()}
-\`\`\`
-
-### 🧾 Diff
-\`\`\`diff
-${this.escapeCode(file.fileDiff || '').trim()}
-\`\`\`
-
-### 📌 Changed Lines
-${sortedLines.join(', ') || 'N/A'}
-`.trim();
-    }).join('\n\n');
+    const filesSection = `Files to review:
+${JSON.stringify(fileObjects, null, 2)}`;
 
     return [
       preamble,
@@ -147,7 +124,7 @@ ${sortedLines.join(', ') || 'N/A'}
       '',
       userContext,
       '',
-      detailedCodeContext
-    ].join('\n\n').trim();
+      filesSection
+    ].join('\n\n');
   }
 }
