@@ -20,7 +20,7 @@ program
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--base-branch <baseBranch>', 'The base branch to compare against', 'main')
   .option('--ignore-files <files>', 'A comma-separated list of glob patterns to ignore', '')
-  .option('--review-level <level>', 'The level of review to perform (line or file)', 'line')
+  .option('--review-level <level>', 'The level of review to perform (line or file)', 'file')
   // GitHub specific options
   .option('--owner <owner>', 'The repository owner (for GitHub)')
   .option('--repo <repo>', 'The repository name (for GitHub)')
