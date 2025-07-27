@@ -4,7 +4,6 @@ import { review } from './reviewer';
 import { createProvider } from './providers';
 import * as dotenv from 'dotenv';
 
-
 dotenv.config();
 
 const program = new Command();
@@ -14,40 +13,31 @@ program
   .description('A CLI tool to review PRs using Gemini AI')
   .requiredOption('--provider <provider>', 'The Git provider (e.g., github, bitbucket)')
   .requiredOption('--pr-id <prId>', 'The pull request ID')
-  // Model and review options
   .option('--model <model>', 'The Gemini model to use', 'gemini-2.0-flash')
   .option('-p, --prompt <prompt>', 'The prompt to use for the review', 'Review this PR for best practices.')
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
-  .option('--base-branch <baseBranch>', 'The base branch to compare against', 'main')
   .option('--ignore-files <files>', 'A comma-separated list of glob patterns to ignore', '')
   .option('--review-level <level>', 'The level of review to perform (line or file)', 'file')
-  // GitHub specific options
   .option('--owner <owner>', 'The repository owner (for GitHub)')
   .option('--repo <repo>', 'The repository name (for GitHub)')
-  // Bitbucket specific options
   .option('--workspace <workspace>', 'The workspace (for Bitbucket)')
   .option('--repo-slug <repoSlug>', 'The repository slug (for Bitbucket)')
   .action(async (options) => {
-    console.log('Starting AI PR Review...');
-    console.log('Options:', {
+    console.log('Starting AI PR Review...', {
       provider: options.provider,
       prId: options.prId,
       model: options.model,
       baseBranch: options.baseBranch,
     });
-
     try {
       const prId = parseInt(options.prId, 10);
-      
       let token: string | undefined;
       if (options.provider === 'github') {
         token = process.env.GITHUB_TOKEN;
         if (!token) throw new Error('GITHUB_TOKEN environment variable not set');
-        console.log('Using GitHub provider.');
       } else if (options.provider === 'bitbucket') {
         token = process.env.BITBUCKET_TOKEN;
         if (!token) throw new Error('BITBUCKET_TOKEN environment variable not set');
-        console.log('Using Bitbucket provider.');
       } else {
         throw new Error(`Unsupported provider: ${options.provider}`);
       }
@@ -62,12 +52,10 @@ program
 
       const ignoreFiles = options.ignoreFiles ? options.ignoreFiles.split(',').filter(Boolean) : [];
 
-      console.log('Reviewing PR...');
       await review(
         provider,
         options.prompt,
         options.styleGuide,
-        options.baseBranch,
         options.model,
         ignoreFiles,
         options.reviewLevel

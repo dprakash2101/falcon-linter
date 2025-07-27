@@ -16,6 +16,7 @@ export interface ReviewFile {
 
 export interface StructuredReview {
   overallSummary: string;
+  positiveFeedback: string[];
   files: ReviewFile[];
 }
 
@@ -24,30 +25,26 @@ export class PromptBuilder {
     private userPrompt: string,
     private styleGuide: string,
     private detailedDiff: DetailedFileChange[],
-    private reviewLevel: 'line' | 'file'
+    private reviewLevel: 'line' | 'file',
+    private prTitle: string,
+    private prBody: string
   ) {
-    // Validate inputs
     if (!userPrompt || !styleGuide) {
       throw new Error('userPrompt and styleGuide cannot be empty');
     }
     if (!['line', 'file'].includes(reviewLevel)) {
       throw new Error('reviewLevel must be either "line" or "file"');
     }
-    if (!detailedDiff || !Array.isArray(detailedDiff)) {
+    if (!detailedDiff || !Array.isArray(detailedDiff) || detailedDiff.length === 0) {
       throw new Error('detailedDiff must be a non-empty array');
     }
   }
 
   private escapeCode(code: string): string {
-    // Escape special characters to prevent breaking code blocks
-    return code
-      .replace(/`/g, '\\`')
-      .replace(/\$/g, '\\$')
-      .replace(/\n/g, '\n');
+    return code.replace(/`/g, '\\`').replace(/\$/g, '\\$');
   }
 
   build(): string {
-    // Define the JSON schema once, using the existing interfaces
     const schemaDefinition = `
       interface ReviewComment {
         line?: number;
@@ -65,32 +62,39 @@ export class PromptBuilder {
 
       interface StructuredReview {
         overallSummary: string;
+        positiveFeedback: string[];
         files: ReviewFile[];
       }
     `;
 
     const preamble = `
-      You are a Senior Software Engineer performing a code review. Your tone should be helpful, educational, and constructive.
-      Your primary goal is to help a junior engineer improve their code by providing clear, actionable, and impactful feedback.
+      You are a Senior Software Engineer reviewing a pull request (PR) for a junior engineer. Your goal is to provide constructive, educational, and actionable feedback to help them improve their coding skills while ensuring high-quality code.
 
       **Review Guidelines**:
-      - Focus on significant issues first, prioritizing:
-        - Architectural concerns and design patterns
-        - Security vulnerabilities and best practices
-        - Performance bottlenecks and efficiency improvements
-        - Major readability, maintainability, and code clarity issues
-        - Adherence to established best practices and the provided style guide
-      - For each suggestion:
-        - Provide concise 'currentCode' and 'suggestedCode' snippets
-        - Include a detailed 'reason' explaining the problem, benefits of the change, and relevant engineering principles
-        - Specify a 'category' (SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE)
-        - Assign a 'severity' (CRITICAL, HIGH, MEDIUM, LOW, INFO)
-      - Provide a comprehensive 'overallSummary' of the pull request
-      - Consolidate related feedback to avoid redundancy
-      - Ensure JSON output conforms to the defined interfaces
+      - **Context Awareness**: Use the PR title and description to understand the intent and scope of the changes.
+      - **Prioritize Impact**: Focus on critical issues (security, performance, bugs) before minor style issues. Limit suggestions to 5 per file to avoid overwhelming feedback.
+      - **Concise Feedback**: Provide code snippets (max 5 lines) and explanations (max 100 words) that are clear and actionable.
+      - **Educational Tone**: Explain the issue, benefits of the suggestion, and reference the style guide or best practices (e.g., OWASP, Clean Code principles).
+      - **Positive Reinforcement**: Include 2-3 specific positive feedback points in 'positiveFeedback' to highlight strengths.
+      - **Category and Severity**: Use only the following for 'category': SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE. Use only the following for 'severity': CRITICAL, HIGH, MEDIUM, LOW, INFO.
+      - **Structured Output**: Follow the JSON schema exactly, ensuring all fields are populated correctly.
 
-      JSON Schema:
+      **JSON Output**:
+      - Provide an 'overallSummary' (150 words max) summarizing key changes, strengths, and concerns.
+      - Include 'positiveFeedback' with specific praises (2-3 items).
+      - List 'files' with targeted comments, using 'line' for line-level feedback when reviewLevel is 'line'.
+
+      **Schema**:
       ${schemaDefinition}
+    `;
+
+    const prContext = `
+      ## Pull Request Context
+      ### Title
+      ${this.escapeCode(this.prTitle)}
+
+      ### Description
+      ${this.escapeCode(this.prBody)}
     `;
 
     const userContext = `
@@ -102,13 +106,8 @@ export class PromptBuilder {
       ${this.escapeCode(this.styleGuide)}
     `;
 
-    const detailedCodeContext = this.detailedDiff.length > 0
-      ? this.detailedDiff.map(file => {
-          if (!file.filePath || !file.fileDiff) {
-            return ''; // Skip invalid file entries
-          }
-          return `
-      ## File Review: ${this.escapeCode(file.filePath)} (Status: ${file.status || 'UNKNOWN'})
+    const detailedCodeContext = this.detailedDiff.map(file => `
+      ## File: ${this.escapeCode(file.filePath)} (Status: ${file.status || 'UNKNOWN'})
       
       ### Old Content
       \`\`\`
@@ -124,16 +123,11 @@ export class PromptBuilder {
       \`\`\`diff
       ${this.escapeCode(file.fileDiff)}
       \`\`\`
-      `;
-        }).filter(Boolean).join('\n\n')
-      : `
-      ## No File Changes
-      No file changes were provided for review.
-      `;
+      
+      ### Changed Lines
+      ${file.changedLines.join(', ')}
+    `).join('\n\n');
 
-    return [preamble, userContext, detailedCodeContext]
-      .filter(Boolean)
-      .join('\n\n')
-      .trim();
+    return [preamble, prContext, userContext, detailedCodeContext].join('\n\n').trim();
   }
 }
