@@ -25,7 +25,7 @@ const reviewSchema: Schema = {
               properties: {
                 line: { type: SchemaType.NUMBER, nullable: true },
                 currentCode: { type: SchemaType.STRING },
-                suggestedCode: { type: SchemaType.STRING },
+                suggestedCode: { type: SchemaType.STRING, nullable: true },
                 reason: { type: SchemaType.STRING },
                 category: { type: SchemaType.STRING }, // Enforced via prompt
                 severity: { type: SchemaType.STRING }, // Enforced via prompt
