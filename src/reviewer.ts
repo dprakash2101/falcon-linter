@@ -34,9 +34,11 @@ const reviewSchema: Schema = {
             items: {
               type: SchemaType.OBJECT,
               properties: {
+                currentCode: { type: SchemaType.STRING },
+                suggestedCode: { type: SchemaType.STRING },
                 reason: { type: SchemaType.STRING },
               },
-              required: ['reason'],
+              required: ['currentCode', 'suggestedCode', 'reason'],
             },
           },
         },
@@ -89,7 +91,13 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
 
     if (reviewLevel === 'file' && Array.isArray(file.fileLevelComments)) {
       file.fileLevelComments.forEach((comment: FileLevelComment) => {
-        if (typeof comment !== 'object' || comment === null || typeof comment.reason !== 'string') {
+        if (
+          typeof comment !== 'object' ||
+          comment === null ||
+          typeof comment.currentCode !== 'string' ||
+          typeof comment.suggestedCode !== 'string' ||
+          typeof comment.reason !== 'string'
+        ) {
           console.log(`Invalid file-level comment structure for file: ${file.filePath}`);
           return;
         }
@@ -97,6 +105,10 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
         fileComments.push('### File-Level Suggestion\n');
         fileComments.push('**Reason:**');
         fileComments.push(comment.reason);
+        fileComments.push('\n```diff');
+        fileComments.push(`- ${comment.currentCode}`);
+        fileComments.push(`+ ${comment.suggestedCode}`);
+        fileComments.push('```\n');
       });
     }
 

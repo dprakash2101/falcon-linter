@@ -6,7 +6,9 @@ export interface ReviewComment {
 }
 
 export interface FileLevelComment {
-  reason: string;
+  currentCode: string; // The exact code snippet to be changed
+  suggestedCode: string; // The suggested code improvement
+  reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
 }
 
 export interface ReviewFile {
@@ -44,6 +46,8 @@ export class PromptBuilder {
 
     const fileLevelInterface = `
       interface FileLevelComment {
+        currentCode: string; // The exact code snippet to be changed
+        suggestedCode: string; // The suggested code improvement
         reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
       }
 
