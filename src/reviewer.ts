@@ -1,4 +1,4 @@
-import { getDiff, globFiles } from './git';
+import { getDiff, globFiles, getDetailedDiff, DetailedFileChange } from './git';
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
@@ -113,7 +113,11 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
     }
 
     if (fileComments.length > 0) {
-      parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
+      parts.push(`
+---
+
+## `+file.filePath+`
+`);
       parts.push(...fileComments);
     }
   });
@@ -135,41 +139,27 @@ export async function review(
   ignoreFiles: string[],
   reviewLevel: 'line' | 'file'
 ): Promise<void> {
-  console.log(`Getting diff from ${baseBranch}...`);
-  let diff: string | null;
-  if (reviewLevel === 'file') {
-    const files = globFiles(ignoreFiles);
-    diff = files.join('\n');
-  } else {
-    diff = getDiff(baseBranch);
-  }
+  console.log(`Getting detailed diff from ${baseBranch}...`);
+  const detailedDiff = getDetailedDiff(baseBranch);
 
-  if (!diff) {
+  if (detailedDiff.length === 0) {
     console.log('No changes found.');
     return;
   }
 
-  if (ignoreFiles.length > 0) {
-    console.log(`Ignoring files matching: ${ignoreFiles.join(', ')}`);
-    const files = diff.split('diff --git ');
-    const filteredFiles = files.filter(file => {
-      if (!file.trim()) return false;
-      const filePath = file.substring(file.indexOf('a/') + 2, file.indexOf(' b/'));
-      return !micromatch.isMatch(filePath, ignoreFiles);
-    });
-    diff = filteredFiles.join('diff --git ');
-  }
+  const filteredDetailedDiff = detailedDiff.filter(file => {
+    return !micromatch.isMatch(file.filePath, ignoreFiles);
+  });
 
-  if (!diff) {
+  if (filteredDetailedDiff.length === 0) {
     console.log('No changes found after filtering ignored files.');
     return;
   }
 
-  console.log('Diff retrieved successfully.');
-  console.log(diff);
+  console.log('Detailed diff retrieved successfully.');
 
   console.log('Building prompt...');
-  const promptBuilder = new PromptBuilder(prompt, styleGuide, diff, reviewLevel);
+  const promptBuilder = new PromptBuilder(prompt, styleGuide, filteredDetailedDiff, reviewLevel);
   const finalPrompt = promptBuilder.build();
   console.log('Prompt built successfully.');
   console.log(finalPrompt);
