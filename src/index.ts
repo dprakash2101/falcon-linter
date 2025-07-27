@@ -4,6 +4,7 @@ import { review } from './reviewer';
 import { createProvider } from './providers';
 import * as dotenv from 'dotenv';
 
+
 dotenv.config();
 
 const program = new Command();
@@ -18,6 +19,8 @@ program
   .option('-p, --prompt <prompt>', 'The prompt to use for the review', 'Review this PR for best practices.')
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--base-branch <baseBranch>', 'The base branch to compare against', 'main')
+  .option('--ignore-files <files>', 'A comma-separated list of glob patterns to ignore', '')
+  .option('--review-level <level>', 'The level of review to perform (line or file)', 'file')
   // GitHub specific options
   .option('--owner <owner>', 'The repository owner (for GitHub)')
   .option('--repo <repo>', 'The repository name (for GitHub)')
@@ -57,8 +60,18 @@ program
         token: token,
       });
 
+      const ignoreFiles = options.ignoreFiles ? options.ignoreFiles.split(',').filter(Boolean) : [];
+
       console.log('Reviewing PR...');
-      await review(provider, options.prompt, options.styleGuide, options.baseBranch, options.model);
+      await review(
+        provider,
+        options.prompt,
+        options.styleGuide,
+        options.baseBranch,
+        options.model,
+        ignoreFiles,
+        options.reviewLevel
+      );
       console.log('Review complete.');
     } catch (error) {
       console.error('Error during review:', error);

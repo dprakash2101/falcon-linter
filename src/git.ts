@@ -1,4 +1,6 @@
 import { execSync } from 'child_process';
+import { glob } from 'glob';
+import micromatch from 'micromatch';
 
 export function getDiff(baseBranch: string): string | null {
   try {
@@ -14,5 +16,15 @@ export function getDiff(baseBranch: string): string | null {
   } catch (error) {
     console.error('Error getting diff:', error);
     return null;
+  }
+}
+
+export function globFiles(ignorePatterns: string[]): string[] {
+  try {
+    const files = glob.sync('**/*', { ignore: ['node_modules/**', '.git/**', ...ignorePatterns] });
+    return files;
+  } catch (error) {
+    console.error('Error globbing files:', error);
+    return [];
   }
 }

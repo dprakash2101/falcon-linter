@@ -1,12 +1,12 @@
-import { getDiff } from './git';
+import { getDiff, globFiles } from './git';
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
-import { PromptBuilder, StructuredReview, ReviewFile } from './prompt';
+import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment, FileLevelComment } from './prompt';
+import micromatch from 'micromatch';
 
 dotenv.config();
 
-// Define the schema with explicit SchemaType values and `as const` for literal type inference
 const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -29,63 +29,81 @@ const reviewSchema: Schema = {
               required: ['line', 'currentCode', 'suggestedCode', 'reason'],
             },
           },
+          fileLevelComments: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                reason: { type: SchemaType.STRING },
+              },
+              required: ['reason'],
+            },
+          },
         },
-        required: ['filePath', 'comments'],
+        required: ['filePath'],
       },
     },
   },
   required: ['files'],
 } as const;
 
-function formatReviewToMarkdown(review: StructuredReview): string {
+function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 'file'): string {
   const parts: string[] = ['# AI Senior Engineer Code Review'];
 
-  // Check if review and review.files are valid
   if (!review || !Array.isArray(review.files) || review.files.length === 0) {
     console.log('No valid files found in review.');
     return '';
   }
 
   review.files.forEach((file: ReviewFile) => {
-    // Validate file structure
-    if (
-      typeof file !== 'object' ||
-      file === null ||
-      typeof file.filePath !== 'string' ||
-      !Array.isArray(file.comments)
-    ) {
+    if (typeof file !== 'object' || file === null || typeof file.filePath !== 'string') {
       console.log(`Invalid file structure for filePath: ${file?.filePath || 'unknown'}`);
       return;
     }
 
-    if (file.comments.length === 0) {
-      return;
+    const fileComments: string[] = [];
+
+    if (reviewLevel === 'line' && Array.isArray(file.comments)) {
+      file.comments.forEach((comment: ReviewComment) => {
+        if (
+          typeof comment !== 'object' ||
+          comment === null ||
+          typeof comment.line !== 'number' ||
+          typeof comment.currentCode !== 'string' ||
+          typeof comment.suggestedCode !== 'string' ||
+          typeof comment.reason !== 'string'
+        ) {
+          console.log(`Invalid comment structure for file: ${file.filePath}`);
+          return;
+        }
+
+        fileComments.push(`### Suggestion for line ${comment.line}\n`);
+        fileComments.push('**Reason:**');
+        fileComments.push(comment.reason);
+        fileComments.push('\n```diff');
+        fileComments.push(`- ${comment.currentCode}`);
+        fileComments.push(`+ ${comment.suggestedCode}`);
+        fileComments.push('```\n');
+      });
     }
 
-    parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
+    if (reviewLevel === 'file' && Array.isArray(file.fileLevelComments)) {
+      file.fileLevelComments.forEach((comment: FileLevelComment) => {
+        if (typeof comment !== 'object' || comment === null || typeof comment.reason !== 'string') {
+          console.log(`Invalid file-level comment structure for file: ${file.filePath}`);
+          return;
+        }
 
-    file.comments.forEach((comment) => {
-      // Validate comment structure
-      if (
-        typeof comment !== 'object' ||
-        comment === null ||
-        typeof comment.line !== 'number' ||
-        typeof comment.currentCode !== 'string' ||
-        typeof comment.suggestedCode !== 'string' ||
-        typeof comment.reason !== 'string'
-      ) {
-        console.log(`Invalid comment structure for file: ${file.filePath}`);
-        return;
-      }
+        fileComments.push('### File-Level Suggestion\n');
+        fileComments.push('**Reason:**');
+        fileComments.push(comment.reason);
+      });
+    }
 
-      parts.push(`### Suggestion for line ${comment.line}\n`);
-      parts.push('**Reason:**');
-      parts.push(comment.reason);
-      parts.push('\n```diff');
-      parts.push(`- ${comment.currentCode}`);
-      parts.push(`+ ${comment.suggestedCode}`);
-      parts.push('```\n');
-    });
+    if (fileComments.length > 0) {
+      parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
+      parts.push(...fileComments);
+    }
   });
 
   if (parts.length === 1) {
@@ -101,20 +119,45 @@ export async function review(
   prompt: string,
   styleGuide: string,
   baseBranch: string,
-  modelName: string
+  modelName: string,
+  ignoreFiles: string[],
+  reviewLevel: 'line' | 'file'
 ): Promise<void> {
   console.log(`Getting diff from ${baseBranch}...`);
-  const diff = getDiff(baseBranch);
+  let diff: string | null;
+  if (reviewLevel === 'file') {
+    const files = globFiles(ignoreFiles);
+    diff = files.join('\n');
+  } else {
+    diff = getDiff(baseBranch);
+  }
 
   if (!diff) {
     console.log('No changes found.');
     return;
   }
+
+  if (ignoreFiles.length > 0) {
+    console.log(`Ignoring files matching: ${ignoreFiles.join(', ')}`);
+    const files = diff.split('diff --git ');
+    const filteredFiles = files.filter(file => {
+      if (!file.trim()) return false;
+      const filePath = file.substring(file.indexOf('a/') + 2, file.indexOf(' b/'));
+      return !micromatch.isMatch(filePath, ignoreFiles);
+    });
+    diff = filteredFiles.join('diff --git ');
+  }
+
+  if (!diff) {
+    console.log('No changes found after filtering ignored files.');
+    return;
+  }
+
   console.log('Diff retrieved successfully.');
   console.log(diff);
 
   console.log('Building prompt...');
-  const promptBuilder = new PromptBuilder(prompt, styleGuide, diff);
+  const promptBuilder = new PromptBuilder(prompt, styleGuide, diff, reviewLevel);
   const finalPrompt = promptBuilder.build();
   console.log('Prompt built successfully.');
   console.log(finalPrompt);
@@ -137,7 +180,7 @@ export async function review(
     console.log(response.text());
     
     const structuredReview = JSON.parse(response.text()) as StructuredReview;
-    const markdownReview = formatReviewToMarkdown(structuredReview);
+    const markdownReview = formatReviewToMarkdown(structuredReview, reviewLevel);
 
     if (markdownReview.length === 0) {
       console.log('AI review completed. No suggestions to post.');
