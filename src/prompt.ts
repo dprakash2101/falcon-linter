@@ -1,3 +1,5 @@
+import { DetailedFileChange } from './git';
+
 export interface ReviewComment {
   line: number;
   currentCode: string;
@@ -25,7 +27,7 @@ export class PromptBuilder {
   constructor(
     private userPrompt: string,
     private styleGuide: string,
-    private diff: string,
+    private detailedDiff: DetailedFileChange[],
     private reviewLevel: 'line' | 'file'
   ) {}
 
@@ -94,11 +96,26 @@ export class PromptBuilder {
       ${this.styleGuide}
     `;
 
-    const codeDiff = `
-      --- Code Diff ---
-      ${this.diff}
-    `;
+    const detailedCodeContext = this.detailedDiff.map(file => `
+--- File: ${file.filePath} ---
 
-    return `${preamble}\n${userContext}\n${codeDiff}`;
+--- Old Content ---
+```
+${file.oldContent}
+```
+
+--- New Content ---
+```
+${file.newContent}
+```
+
+--- Diff ---
+```diff
+${file.fileDiff}
+```
+`).join('
+');
+
+    return `${preamble}\n${userContext}\n${detailedCodeContext}`;
   }
 }
