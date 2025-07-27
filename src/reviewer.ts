@@ -2,7 +2,7 @@ import { getDiff, globFiles, getDetailedDiff, DetailedFileChange } from './git';
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
-import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment } from './prompt'; // Removed FileLevelComment
+import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment } from './prompt';
 import micromatch from 'micromatch';
 
 dotenv.config();
@@ -10,7 +10,7 @@ dotenv.config();
 const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
-    overallSummary: { type: SchemaType.STRING }, // overallSummary is now mandatory
+    overallSummary: { type: SchemaType.STRING },
     files: {
       type: SchemaType.ARRAY,
       items: {
@@ -22,33 +22,33 @@ const reviewSchema: Schema = {
             items: {
               type: SchemaType.OBJECT,
               properties: {
-                line: { type: SchemaType.NUMBER }, // line is now optional
+                line: { type: SchemaType.NUMBER },
                 currentCode: { type: SchemaType.STRING },
                 suggestedCode: { type: SchemaType.STRING },
                 reason: { type: SchemaType.STRING },
-                category: { type: SchemaType.STRING }, // Added category
+                category: { type: SchemaType.STRING },
+                severity: { type: SchemaType.STRING },
               },
-              required: ['currentCode', 'suggestedCode', 'reason'], // line is no longer required
+              required: ['currentCode', 'suggestedCode', 'reason', 'category', 'severity'],
             },
           },
         },
-        required: ['filePath', 'comments'], // comments array is now required
+        required: ['filePath', 'comments'],
       },
     },
   },
-  required: ['overallSummary', 'files'], // overallSummary is now required
+  required: ['overallSummary', 'files'],
 } as const;
 
-function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 'file'): string {
+function formatReviewToMarkdown(review: StructuredReview): string {
   const parts: string[] = ['# AI Senior Engineer Code Review'];
 
-  // Overall Summary is now mandatory
   parts.push(`\n## Overall Summary\n`);
   parts.push(review.overallSummary);
 
   if (!Array.isArray(review.files) || review.files.length === 0) {
     console.log('No valid files found in review.');
-    return parts.join('\n'); // Return summary even if no files
+    return parts.join('\n');
   }
 
   review.files.forEach((file: ReviewFile) => {
@@ -69,7 +69,9 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
         comment === null ||
         typeof comment.currentCode !== 'string' ||
         typeof comment.suggestedCode !== 'string' ||
-        typeof comment.reason !== 'string'
+        typeof comment.reason !== 'string' ||
+        typeof comment.category !== 'string' ||
+        typeof comment.severity !== 'string'
       ) {
         console.log(`Invalid comment structure for file: ${file.filePath}`);
         return;
@@ -81,9 +83,7 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
         parts.push('### File-Level Suggestion\n');
       }
 
-      if (comment.category) {
-        parts.push(`**Category:** ${comment.category}\n`);
-      }
+      parts.push(`**Category:** ${comment.category} | **Severity:** ${comment.severity}\n`);
       parts.push('**Reason:**');
       parts.push(comment.reason);
       parts.push('\n```diff');
@@ -148,7 +148,7 @@ export async function review(
     console.log(response.text());
     
     const structuredReview = JSON.parse(response.text()) as StructuredReview;
-    const markdownReview = formatReviewToMarkdown(structuredReview, reviewLevel);
+    const markdownReview = formatReviewToMarkdown(structuredReview);
 
     if (markdownReview.length === 0) {
       console.log('AI review completed. No suggestions to post.');

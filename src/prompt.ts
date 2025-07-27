@@ -5,7 +5,8 @@ export interface ReviewComment {
   currentCode: string; // The exact code snippet to be changed
   suggestedCode: string; // The suggested code improvement
   reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
-  category?: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR'; // Optional: Categorization of the feedback
+  category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE'; // Mandatory: Categorization of the feedback
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO'; // Mandatory: Severity level of the feedback
 }
 
 export interface ReviewFile {
@@ -33,7 +34,8 @@ export class PromptBuilder {
         currentCode: string; // The exact code snippet to be changed
         suggestedCode: string; // The suggested code improvement
         reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
-        category?: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR'; // Optional: Categorization of the feedback
+        category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE'; // Mandatory: Categorization of the feedback
+        severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO'; // Mandatory: Severity level of the feedback
       }
 
       interface ReviewFile {
@@ -61,6 +63,8 @@ export class PromptBuilder {
           - The underlying engineering principles, design patterns, or best practices that support your suggestion.
           - Potential negative consequences or risks of NOT making the change.
           - If applicable, consolidate related feedback for a file into a single, comprehensive suggestion to avoid noise.
+      - You MUST provide a 'category' from the following: SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE.
+      - You MUST provide a 'severity' from the following: CRITICAL, HIGH, MEDIUM, LOW, INFO.
 
       **You MUST provide an 'overallSummary' at the top-level of the JSON response.** This summary should be a high-level overview of the entire pull request, highlighting major themes, architectural implications, or overall quality.
 
