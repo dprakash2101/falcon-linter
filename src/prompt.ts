@@ -113,8 +113,7 @@ ${file.newContent}
 ```diff
 ${file.fileDiff}
 ```
-`).join('
-');
+`).join('\n');
 
     return `${preamble}
 ${userContext}

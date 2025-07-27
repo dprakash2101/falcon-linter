@@ -113,7 +113,11 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
     }
 
     if (fileComments.length > 0) {
-      parts.push(`\n---\n\n## `${file.filePath}`\n`);
+      parts.push(`
+---
+
+## `${file.filePath}`
+`);
       parts.push(...fileComments);
     }
   });
