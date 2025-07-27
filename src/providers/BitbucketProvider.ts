@@ -20,11 +20,13 @@ export class BitbucketProvider implements GitProvider {
 
   async postReview(comment: string): Promise<void> {
     try {
+      const truncatedComment = comment.substring(0, 1000); // Truncate to 1000 characters for testing
+      console.log(`[DEBUG] Comment length: ${truncatedComment.length}`);
       const response = await axios.post(
         this.apiUrl,
         {
           content: {
-            raw: comment,
+            raw: truncatedComment,
             markup: 'MARKDOWN',
           },
         },
