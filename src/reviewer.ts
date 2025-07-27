@@ -2,7 +2,7 @@ import { getDiff, globFiles, getDetailedDiff, DetailedFileChange } from './git';
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
-import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment, FileLevelComment } from './prompt';
+import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment } from './prompt'; // Removed FileLevelComment
 import micromatch from 'micromatch';
 
 dotenv.config();
@@ -10,7 +10,7 @@ dotenv.config();
 const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
-    overallSummary: { type: SchemaType.STRING }, // Added overallSummary to schema
+    overallSummary: { type: SchemaType.STRING }, // overallSummary is now mandatory
     files: {
       type: SchemaType.ARRAY,
       items: {
@@ -22,112 +22,76 @@ const reviewSchema: Schema = {
             items: {
               type: SchemaType.OBJECT,
               properties: {
-                line: { type: SchemaType.NUMBER },
+                line: { type: SchemaType.NUMBER }, // line is now optional
                 currentCode: { type: SchemaType.STRING },
                 suggestedCode: { type: SchemaType.STRING },
                 reason: { type: SchemaType.STRING },
+                category: { type: SchemaType.STRING }, // Added category
               },
-              required: ['line', 'currentCode', 'suggestedCode', 'reason'],
-            },
-          },
-          fileLevelComments: {
-            type: SchemaType.ARRAY,
-            items: {
-              type: SchemaType.OBJECT,
-              properties: {
-                currentCode: { type: SchemaType.STRING },
-                suggestedCode: { type: SchemaType.STRING },
-                reason: { type: SchemaType.STRING },
-              },
-              required: ['currentCode', 'suggestedCode', 'reason'],
+              required: ['currentCode', 'suggestedCode', 'reason'], // line is no longer required
             },
           },
         },
-        required: ['filePath'],
+        required: ['filePath', 'comments'], // comments array is now required
       },
     },
   },
-  required: ['files'],
+  required: ['overallSummary', 'files'], // overallSummary is now required
 } as const;
 
 function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 'file'): string {
   const parts: string[] = ['# AI Senior Engineer Code Review'];
 
-  if (review.overallSummary) {
-    parts.push(`\n## Overall Summary\n`);
-    parts.push(review.overallSummary);
-  }
+  // Overall Summary is now mandatory
+  parts.push(`\n## Overall Summary\n`);
+  parts.push(review.overallSummary);
 
-  if (!review || !Array.isArray(review.files) || review.files.length === 0) {
+  if (!Array.isArray(review.files) || review.files.length === 0) {
     console.log('No valid files found in review.');
-    return '';
+    return parts.join('\n'); // Return summary even if no files
   }
 
   review.files.forEach((file: ReviewFile) => {
-    if (typeof file !== 'object' || file === null || typeof file.filePath !== 'string') {
+    if (typeof file !== 'object' || file === null || typeof file.filePath !== 'string' || !Array.isArray(file.comments)) {
       console.log(`Invalid file structure for filePath: ${file?.filePath || 'unknown'}`);
       return;
     }
 
-    const fileComments: string[] = [];
-
-    if (reviewLevel === 'line' && Array.isArray(file.comments)) {
-      file.comments.forEach((comment: ReviewComment) => {
-        if (
-          typeof comment !== 'object' ||
-          comment === null ||
-          typeof comment.line !== 'number' ||
-          typeof comment.currentCode !== 'string' ||
-          typeof comment.suggestedCode !== 'string' ||
-          typeof comment.reason !== 'string'
-        ) {
-          console.log(`Invalid comment structure for file: ${file.filePath}`);
-          return;
-        }
-
-        fileComments.push(`### Suggestion for line ${comment.line}\n`);
-        fileComments.push('**Reason:**');
-        fileComments.push(comment.reason);
-        fileComments.push('\n```diff');
-        fileComments.push(`- ${comment.currentCode}`);
-        fileComments.push(`+ ${comment.suggestedCode}`);
-        fileComments.push('```\n');
-      });
+    if (file.comments.length === 0) {
+      return;
     }
 
-    if (reviewLevel === 'file' && Array.isArray(file.fileLevelComments)) {
-      file.fileLevelComments.forEach((comment: FileLevelComment) => {
-        if (
-          typeof comment !== 'object' ||
-          comment === null ||
-          typeof comment.currentCode !== 'string' ||
-          typeof comment.suggestedCode !== 'string' ||
-          typeof comment.reason !== 'string'
-        ) {
-          console.log(`Invalid file-level comment structure for file: ${file.filePath}`);
-          return;
-        }
+    parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
 
-        fileComments.push('### File-Level Suggestion\n');
-        fileComments.push('**Reason:**');
-        fileComments.push(comment.reason);
-        fileComments.push('\n```diff');
-        fileComments.push(`- ${comment.currentCode}`);
-        fileComments.push(`+ ${comment.suggestedCode}`);
-        fileComments.push('```\n');
-      });
-    }
+    file.comments.forEach((comment: ReviewComment) => {
+      if (
+        typeof comment !== 'object' ||
+        comment === null ||
+        typeof comment.currentCode !== 'string' ||
+        typeof comment.suggestedCode !== 'string' ||
+        typeof comment.reason !== 'string'
+      ) {
+        console.log(`Invalid comment structure for file: ${file.filePath}`);
+        return;
+      }
 
-    if (fileComments.length > 0) {
-      parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
-      parts.push(...fileComments);
-    }
+      if (comment.line !== undefined) {
+        parts.push(`### Suggestion for line ${comment.line}\n`);
+      } else {
+        parts.push('### File-Level Suggestion\n');
+      }
+
+      if (comment.category) {
+        parts.push(`**Category:** ${comment.category}\n`);
+      }
+      parts.push('**Reason:**');
+      parts.push(comment.reason);
+      parts.push('\n```diff');
+      parts.push(`- ${comment.currentCode}`);
+      parts.push(`+ ${comment.suggestedCode}`);
+      parts.push('```\n');
+    });
   });
-
-  if (parts.length === 1 && !review.overallSummary) {
-    console.log('No valid suggestions to format.');
-    return '';
-  }
 
   return parts.join('\n');
 }

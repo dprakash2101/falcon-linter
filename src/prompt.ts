@@ -1,26 +1,20 @@
 import { DetailedFileChange } from './git';
 
 export interface ReviewComment {
-  line: number;
-  currentCode: string;
-  suggestedCode: string;
-  reason: string;
-}
-
-export interface FileLevelComment {
+  line?: number; // Optional: The line number where the comment applies (for line-level comments)
   currentCode: string; // The exact code snippet to be changed
   suggestedCode: string; // The suggested code improvement
   reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
+  category?: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR'; // Optional: Categorization of the feedback
 }
 
 export interface ReviewFile {
-  filePath: string;
-  comments?: ReviewComment[];
-  fileLevelComments?: FileLevelComment[];
+  filePath: string; // The path to the file being reviewed
+  comments: ReviewComment[];
 }
 
 export interface StructuredReview {
-  overallSummary?: string; // Optional: A high-level summary of the entire pull request.
+  overallSummary: string; // Mandatory: A high-level summary of the entire pull request.
   files: ReviewFile[];
 }
 
@@ -33,29 +27,18 @@ export class PromptBuilder {
   ) {}
 
   build(): string {
-    const lineLevelInterface = `
+    const commentInterface = `
       interface ReviewComment {
-        line: number; // The line number where the comment applies
+        line?: number; // Optional: The line number where the comment applies (for line-level comments)
         currentCode: string; // The exact code snippet to be changed
         suggestedCode: string; // The suggested code improvement
         reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
+        category?: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR'; // Optional: Categorization of the feedback
       }
 
       interface ReviewFile {
         filePath: string; // The path to the file being reviewed
         comments: ReviewComment[];
-      }
-    `;
-
-    const fileLevelInterface = `
-      interface FileLevelComment {
-        currentCode: string; // The exact code snippet to be changed
-        suggestedCode: string; // The suggested code improvement
-        reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
-      }
-
-      interface ReviewFile {
-        filePath: string; // The path to the file being reviewed\n        fileLevelComments: FileLevelComment[];
       }
     `;
 
@@ -79,15 +62,15 @@ export class PromptBuilder {
           - Potential negative consequences or risks of NOT making the change.
           - If applicable, consolidate related feedback for a file into a single, comprehensive suggestion to avoid noise.
 
-      **Optionally, provide an 'overallSummary' at the top-level of the JSON response.** This summary should be a high-level overview of the entire pull request, highlighting major themes, architectural implications, or overall quality.
+      **You MUST provide an 'overallSummary' at the top-level of the JSON response.** This summary should be a high-level overview of the entire pull request, highlighting major themes, architectural implications, or overall quality.
 
       Please review the following code changes and provide your feedback based on the JSON schema provided.
 
       The JSON object must conform to the following TypeScript interfaces:
-      ${this.reviewLevel === 'line' ? lineLevelInterface : fileLevelInterface}
+      ${commentInterface}
 
       interface StructuredReview {
-        overallSummary?: string; // Optional: A high-level summary of the entire pull request.
+        overallSummary: string; // Mandatory: A high-level summary of the entire pull request.
         files: ReviewFile[];
       }
     `;
