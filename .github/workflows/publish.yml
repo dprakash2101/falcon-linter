@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history to ensure rebase works
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,6 +46,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for rebase
+          ref: main # Explicitly checkout the main branch
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -59,8 +64,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.name ${{ secrets.User_Name}}
-          git config --global user.email ${{ secrets.User_Email}}
+          git config --global user.name "${{ secrets.User_Name }}"
+          git config --global user.email "${{ secrets.User_Email }}"
 
       - name: Install dependencies
         run: npm ci
@@ -83,7 +88,11 @@ jobs:
           fi
 
       - name: Push changes
-        run: git push && git push --tags
+        run: |
+          git fetch origin main
+          git rebase origin/main
+          git push origin main
+          git push origin --tags
 
       - name: Publish to npm
         env:
