@@ -238,5 +238,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **Devi Prakash Kandikonda**
 
 -   GitHub: [@dprakash2101](https://github.com/dprakash2101)
--   Twitter: [@dprakash_k](https://twitter.com/dprakash_k)
--   Email: [dprakash2101@gmail.com](mailto:dprakash2101@gmail.com)
+
