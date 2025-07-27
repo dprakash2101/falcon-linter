@@ -34,6 +34,7 @@ export interface DetailedFileChange {
   oldContent: string;
   newContent: string;
   fileDiff: string;
+  status: string;
 }
 
 export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
@@ -74,7 +75,7 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
         continue;
       }
 
-      changedFiles.push({ filePath, oldContent, newContent, fileDiff });
+      changedFiles.push({ filePath, oldContent, newContent, fileDiff, status });
     }
 
     return changedFiles;

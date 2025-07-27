@@ -1,25 +1,21 @@
 import { DetailedFileChange } from './git';
 
 export interface ReviewComment {
-  line: number;
+  line?: number;
   currentCode: string;
   suggestedCode: string;
   reason: string;
-}
-
-export interface FileLevelComment {
-  currentCode: string;
-  suggestedCode: string;
-  reason: string;
+  category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 }
 
 export interface ReviewFile {
   filePath: string;
-  comments?: ReviewComment[];
-  fileLevelComments?: FileLevelComment[];
+  comments: ReviewComment[];
 }
 
 export interface StructuredReview {
+  overallSummary: string;
   files: ReviewFile[];
 }
 
@@ -29,33 +25,47 @@ export class PromptBuilder {
     private styleGuide: string,
     private detailedDiff: DetailedFileChange[],
     private reviewLevel: 'line' | 'file'
-  ) {}
+  ) {
+    // Validate inputs
+    if (!userPrompt || !styleGuide) {
+      throw new Error('userPrompt and styleGuide cannot be empty');
+    }
+    if (!['line', 'file'].includes(reviewLevel)) {
+      throw new Error('reviewLevel must be either "line" or "file"');
+    }
+    if (!detailedDiff || !Array.isArray(detailedDiff)) {
+      throw new Error('detailedDiff must be a non-empty array');
+    }
+  }
+
+  private escapeCode(code: string): string {
+    // Escape special characters to prevent breaking code blocks
+    return code
+      .replace(/`/g, '\\`')
+      .replace(/\$/g, '\\$')
+      .replace(/\n/g, '\n');
+  }
 
   build(): string {
-    const lineLevelInterface = `
+    // Define the JSON schema once, using the existing interfaces
+    const schemaDefinition = `
       interface ReviewComment {
-        line: number; // The line number where the comment applies
-        currentCode: string; // The exact code snippet to be changed
-        suggestedCode: string; // The suggested code improvement
-        reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
+        line?: number;
+        currentCode: string;
+        suggestedCode: string;
+        reason: string;
+        category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
+        severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
       }
 
       interface ReviewFile {
-        filePath: string; // The path to the file being reviewed
+        filePath: string;
         comments: ReviewComment[];
       }
-    `;
 
-    const fileLevelInterface = `
-      interface FileLevelComment {
-        currentCode: string; // The exact code snippet to be changed
-        suggestedCode: string; // The suggested code improvement
-        reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
-      }
-
-      interface ReviewFile {
-        filePath: string; // The path to the file being reviewed
-        fileLevelComments: FileLevelComment[];
+      interface StructuredReview {
+        overallSummary: string;
+        files: ReviewFile[];
       }
     `;
 
@@ -63,62 +73,67 @@ export class PromptBuilder {
       You are a Senior Software Engineer performing a code review. Your tone should be helpful, educational, and constructive.
       Your primary goal is to help a junior engineer improve their code by providing clear, actionable, and impactful feedback.
 
-      Focus your review on the most significant issues:
-      - Architectural concerns
-      - Security vulnerabilities
-      - Performance bottlenecks
-      - Major readability or maintainability issues
-      - Adherence to established best practices and the provided style guide.
+      **Review Guidelines**:
+      - Focus on significant issues first, prioritizing:
+        - Architectural concerns and design patterns
+        - Security vulnerabilities and best practices
+        - Performance bottlenecks and efficiency improvements
+        - Major readability, maintainability, and code clarity issues
+        - Adherence to established best practices and the provided style guide
+      - For each suggestion:
+        - Provide concise 'currentCode' and 'suggestedCode' snippets
+        - Include a detailed 'reason' explaining the problem, benefits of the change, and relevant engineering principles
+        - Specify a 'category' (SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE)
+        - Assign a 'severity' (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+      - Provide a comprehensive 'overallSummary' of the pull request
+      - Consolidate related feedback to avoid redundancy
+      - Ensure JSON output conforms to the defined interfaces
 
-      For every suggestion:
-      - You MUST provide 'currentCode' and 'suggestedCode'. These code snippets should be concise and directly reflect the change, avoiding large code blocks.
-      - The 'reason' field MUST be highly detailed and comprehensive. Explain the 'why' behind the suggestion, including:
-          - The specific problem the current code creates.
-          - The benefits of your suggested change (e.g., improved security, performance, readability, maintainability, scalability).
-          - The underlying engineering principles or best practices that support your suggestion.
-          - Potential negative consequences of NOT making the change.
-
-      Please review the following code changes and provide your feedback based on the JSON schema provided.
-
-      The JSON object must conform to the following TypeScript interfaces:
-      ${this.reviewLevel === 'line' ? lineLevelInterface : fileLevelInterface}
-
-      interface StructuredReview {
-        files: ReviewFile[];
-      }
+      JSON Schema:
+      ${schemaDefinition}
     `;
 
     const userContext = `
-      --- User Prompt ---
-      ${this.userPrompt}
+      ## User Context
+      ### User Prompt
+      ${this.escapeCode(this.userPrompt)}
 
-      --- Style Guide ---
-      ${this.styleGuide}
+      ### Style Guide
+      ${this.escapeCode(this.styleGuide)}
     `;
 
-    const detailedCodeContext = this.detailedDiff.map(file => {
-      return `--- File: ${file.filePath} ---
+    const detailedCodeContext = this.detailedDiff.length > 0
+      ? this.detailedDiff.map(file => {
+          if (!file.filePath || !file.fileDiff) {
+            return ''; // Skip invalid file entries
+          }
+          return `
+      ## File Review: ${this.escapeCode(file.filePath)} (Status: ${file.status || 'UNKNOWN'})
+      
+      ### Old Content
+      \`\`\`
+      ${this.escapeCode(file.oldContent || '')}
+      \`\`\`
+      
+      ### New Content
+      \`\`\`
+      ${this.escapeCode(file.newContent || '')}
+      \`\`\`
+      
+      ### Diff
+      \`\`\`diff
+      ${this.escapeCode(file.fileDiff)}
+      \`\`\`
+      `;
+        }).filter(Boolean).join('\n\n')
+      : `
+      ## No File Changes
+      No file changes were provided for review.
+      `;
 
---- Old Content ---
-\`\`\`
-${file.oldContent}
-\`\`\`
-
---- New Content ---
-\`\`\`
-${file.newContent}
-\`\`\`
-
---- Diff ---
-\`\`\`diff
-${file.fileDiff}
-\`\`\`
-`;
-    }).join('\n');
-
-    // ✅ Final return statement for full prompt
-    return `${preamble}
-${userContext}
-${detailedCodeContext}`;
+    return [preamble, userContext, detailedCodeContext]
+      .filter(Boolean)
+      .join('\n\n')
+      .trim();
   }
 }
