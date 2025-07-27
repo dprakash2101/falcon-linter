@@ -42,7 +42,7 @@ const reviewSchema: Schema = {
 } as const;
 
 function formatReviewToMarkdown(review: StructuredReview): string {
-  const parts: string[] = ['# AI Senior Engineer Code Review'];
+  const parts: string[] = ['# Falcon PR Reviewer'];
 
   parts.push(`\n## Overall Summary\n${review.overallSummary}`);
 
