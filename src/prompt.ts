@@ -64,7 +64,7 @@ export class PromptBuilder {
           - Potential negative consequences or risks of NOT making the change.
           - If applicable, consolidate related feedback for a file into a single, comprehensive suggestion to avoid noise.
       - You MUST provide a 'category' from the following: SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE.
-      - You MUST provide a 'severity' from the following: CRITICAL, HIGH, MEDIUM, LOW, INFO.
+      - You MUST provide a 'severity' from the following: CRITICAL, HIGH' | 'MEDIUM' | 'LOW' | 'INFO'.
 
       **You MUST provide an 'overallSummary' at the top-level of the JSON response.** This summary should be a high-level overview of the entire pull request, highlighting major themes, architectural implications, or overall quality.
 
