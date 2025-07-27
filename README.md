@@ -8,12 +8,10 @@
   <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=feature-request">Request Feature</a>
 </p>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/v/falcon-linter?style=for-the-badge" alt="NPM version"></a>
-  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/dm/falcon-linter?style=for-the-badge" alt="NPM downloads"></a>
-  <a href="https://github.com/dprakash2101/falcon-linter/blob/main/LICENSE"><img src="https://img.shields.io/github/license/dprakash2101/falcon-linter?style=for-the-badge" alt="License"></a>
-  <a href="https://github.com/dprakash2101/falcon-linter/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/dprakash2101/falcon-linter/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
-</p>
+[![Install with npm](https://img.shields.io/badge/Install%20with-npm-red?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/falcon-linter)
+[![Install from GitHub](https://img.shields.io/badge/Install%20from-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/dprakash2101/falcon-linter)
+
+
 
 ---
 
@@ -51,6 +49,14 @@ npm install -g falcon-linter
 ```
 
 Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
+
+#### Git
+
+The library can also be installed directly from the Git repository:
+
+```bash
+npm install dprakash2101/falcon-linter
+```
 
 ### Configuration
 
@@ -207,11 +213,13 @@ pipelines:
           script:
             - npm i -g falcon-linter
             - >
-              falcon-linter
-              --provider bitbucket
-              --pr-id $BITBUCKET_PULL_REQUEST_ID
-              --workspace $BITBUCKET_WORKSPACE
-              --repo-slug $BITBUCKET_REPO_SLUG
+              falcon-linter \
+              --provider bitbucket \
+              --pr-id $BITBUCKET_PULL_REQUEST_ID \
+              --workspace $BITBUCKET_WORKSPACE \
+              --repo-slug $BITBUCKET_REPO_SLUG \
+              --bitbucket-username $BITBUCKET_USERNAME \
+              --bitbucket-app-password $BITBUCKET_APP_PASSWORD \
               --base-branch $BITBUCKET_PR_DESTINATION_BRANCH
 ```
 
