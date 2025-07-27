@@ -109,15 +109,15 @@ export class PromptBuilder {
     const detailedCodeContext = this.detailedDiff.map(file => `
       ## File: ${this.escapeCode(file.filePath)} (Status: ${file.status || 'UNKNOWN'})
       
-      ### Old Content
-      \`\`\`
+      ### Original Code
+      ```
       ${this.escapeCode(file.oldContent || '')}
-      \`\`\`
+      ```
       
-      ### New Content
-      \`\`\`
+      ### Modified Code
+      ```
       ${this.escapeCode(file.newContent || '')}
-      \`\`\`
+      ```
       
       ### Diff
       \`\`\`diff
