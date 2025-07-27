@@ -1,0 +1,74 @@
+name: Publish to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        type: choice
+        description: 'Semver bump type'
+        required: true
+        default: 'prerelease'
+        options:
+          - prerelease
+          - patch
+          - minor
+          - major
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for rebase
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://npm.pkg.github.com/'
+          scope: '@dprakash2101'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "${{ secrets.User_Name }}"
+          git config --global user.email "${{ secrets.User_Email }}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Bump version
+        run: |
+          VERSION_TYPE=${{ github.event.inputs.version_type }}
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          if [[ "$VERSION_TYPE" == "prerelease" ]]; then
+            if [[ "$CURRENT_VERSION" == 0.* ]]; then
+              npm version patch
+            else
+              echo "Error: 'prerelease' is only for initial development (0.x.y versions)."
+              echo "For stable versions (>=1.0.0), please use 'patch', 'minor', or 'major'."
+              exit 1
+            fi
+          else
+            npm version $VERSION_TYPE
+          fi
+
+      - name: Push changes
+        run: |
+          git fetch origin main
+          git rebase origin/main
+          git push origin main
+          git push origin --tags
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

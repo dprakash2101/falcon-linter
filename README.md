@@ -193,7 +193,7 @@ jobs:
 
 ### Bitbucket Pipelines Example
 
-Add the following to your `bitbucket-pipelines.yml` file:
+Add the following to your `bitbucket-pipelines.yml` file. Make sure to configure `GEMINI_API_KEY` and `BITBUCKET_TOKEN` as repository variables in your Bitbucket settings.
 
 ```yaml
 pipelines:
@@ -209,7 +209,7 @@ pipelines:
               --provider bitbucket
               --pr-id $BITBUCKET_PULL_REQUEST_ID
               --workspace $BITBUCKET_WORKSPACE
-              --repo-slug $BITBUCKDE_REPO_SLUG
+              --repo-slug $BITBUCKET_REPO_SLUG
               --base-branch $BITBUCKET_PR_DESTINATION_BRANCH
 ```
 
