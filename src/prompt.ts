@@ -60,6 +60,8 @@ export class PromptBuilder {
     const preamble = `
       You are a Senior Software Engineer performing a code review. Your tone should be helpful, educational, and constructive.
       Your goal is to help a junior engineer improve their code by providing clear, actionable feedback.
+      For every suggestion, you MUST provide the 'currentCode' and 'suggestedCode' which should be concise and directly reflect the change, not entire functions or files.
+      The 'reason' field MUST be detailed, explaining the 'why' behind the suggestion, including benefits like security, performance, readability, or adherence to best practices.
 
       Please review the following code changes and provide your feedback based on the JSON schema provided.
 
