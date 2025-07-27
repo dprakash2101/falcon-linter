@@ -66,12 +66,26 @@ jobs:
         run: npm ci
 
       - name: Bump version
-        run: npm version ${{ github.event.inputs.version_type }}
+        run: |
+          VERSION_TYPE=${{ github.event.inputs.version_type }}
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          if [[ "$VERSION_TYPE" == "prerelease" ]]; then
+            if [[ "$CURRENT_VERSION" == 0.* ]]; then
+              npm version patch
+            else
+              echo "Error: 'prerelease' is only for initial development (0.x.y versions)."
+              echo "For stable versions (>=1.0.0), please use 'patch', 'minor', or 'major'."
+              exit 1
+            fi
+          else
+            npm version $VERSION_TYPE
+          fi
 
       - name: Push changes
         run: git push && git push --tags
 
       - name: Publish to npm
-        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+        run: npm publish --access public --tag latest
