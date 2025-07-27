@@ -1,7 +1,7 @@
 <h1 align="center">Falcon Linter</h1>
 
 <p align="center">
-  Your AI-powered "Senior Engineer" for automated pull request reviews.
+  Your AI-powered "Falcon PR Reviewer" for automated pull request reviews.
   <br />
   <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=bug">Report Bug</a>
   ·
@@ -25,7 +25,7 @@ The goal is to provide helpful, educational, and constructive feedback to help j
 
 ## Key Features
 
--   **🤖 Senior Engineer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
+-   **🤖 Falcon PR Reviewer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
 -   **📝 Actionable Feedback with Code Diff:** All review comments now include the `currentCode` and `suggestedCode` in a diff format, making feedback precise and easy to apply.
 -   **🧠 Enhanced Contextual Understanding:** Provides Gemini with full file content (old and new) and detailed diffs for superior review quality and relevance.
 -   **🎯 Granular Review Levels:** Choose between `line`-level (precise, diff-based) or `file`-level (high-level summary) reviews to suit your needs.
