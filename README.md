@@ -68,11 +68,57 @@ starship-scribe \
   --repo-slug your-repo-slug
 ```
 
+## Customizing the Review
+
+You can customize the AI's review by providing a custom prompt and a style guide. This allows you to tailor the feedback to your project's specific needs and coding standards.
+
+- `--prompt <prompt>`: Use this to provide a custom prompt for the AI. This can be a simple instruction or a complex, multi-line prompt.
+- `--style-guide <styleGuide>`: Use this to provide a style guide for the AI to follow. This can be a set of rules, a link to a style guide, or a full-blown document.
+
+### Examples
+
+#### Simple Prompt
+
+```bash
+starship-scribe \
+  --provider github \
+  --pr-id 123 \
+  --owner your-github-username \
+  --repo your-repo-name \
+  --prompt "You are a senior engineer reviewing a pull request. Please be concise and to the point."
+```
+
+#### Multi-line Prompt from a File
+
+You can also pass in a multi-line prompt from a file:
+
+```bash
+starship-scribe \
+  --provider github \
+  --pr-id 123 \
+  --owner your-github-username \
+  --repo your-repo-name \
+  --prompt "$(cat my-prompt.txt)"
+```
+
+#### Using a Style Guide
+
+```bash
+starship-scribe \
+  --provider github \
+  --pr-id 123 \
+  --owner your-github-username \
+  --repo your-repo-name \
+  --style-guide "Follow the Google TypeScript Style Guide."
+```
+
 ## CI/CD Pipeline Integration
 
 ### GitHub Actions Example
 
 Create a file named `.github/workflows/ai-review.yml`:
+
+```
 
 ```yaml
 name: AI PR Review
