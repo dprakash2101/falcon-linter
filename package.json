@@ -9,6 +9,10 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dprakash2101/falcon-linter.git"
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
