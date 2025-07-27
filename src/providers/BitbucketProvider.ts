@@ -1,4 +1,3 @@
-
 import { GitProvider } from './types';
 import axios, { AxiosError } from 'axios';
 
@@ -17,9 +16,6 @@ export class BitbucketProvider implements GitProvider {
   }
 
   async postReview(comment: string): Promise<void> {
-    console.log(`Posting review to Bitbucket PR #${this.prId}...`);
-    console.log(`API URL: ${this.apiUrl}`);
-
     try {
       const response = await axios.post(
         this.apiUrl,
@@ -38,22 +34,31 @@ export class BitbucketProvider implements GitProvider {
         }
       );
       console.log(`Successfully posted review to Bitbucket PR #${this.prId}.`);
-      console.log(`Response status: ${response.status}`);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
-        console.error(`Error posting review to Bitbucket PR #${this.prId}:`);
-        if (axiosError.response) {
-          console.error(`Status: ${axiosError.response.status}`);
-          console.error('Data:', axiosError.response.data);
-        } else if (axiosError.request) {
-          console.error('No response received from Bitbucket.');
-        } else {
-          console.error('Error setting up request:', axiosError.message);
-        }
+        console.error(`Error posting review to Bitbucket PR #${this.prId}:`, axiosError.message);
       } else {
-        console.error('An unexpected error occurred:', error);
+        console.error('Unexpected error:', error);
       }
+      throw error;
+    }
+  }
+
+  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string }> {
+    try {
+      const response = await axios.get(
+        `https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/pullrequests/${this.prId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+      return { title: response.data.title, body: response.data.description || '', baseBranch: response.data.destination.branch.name };
+    } catch (error) {
+      console.error(`Error fetching PR details for Bitbucket PR #${this.prId}:`, error);
+      return { title: '', body: '', baseBranch: '' };
     }
   }
 }

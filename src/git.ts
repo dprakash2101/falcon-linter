@@ -2,6 +2,15 @@ import { execSync } from 'child_process';
 import { glob } from 'glob';
 import * as fs from 'fs';
 
+export interface DetailedFileChange {
+  filePath: string;
+  oldContent: string;
+  newContent: string;
+  fileDiff: string;
+  status: string;
+  changedLines: number[];
+}
+
 export function getDiff(baseBranch: string): string | null {
   try {
     const fetchCommand = `git fetch origin ${baseBranch}`;
@@ -29,14 +38,6 @@ export function globFiles(ignorePatterns: string[]): string[] {
   }
 }
 
-export interface DetailedFileChange {
-  filePath: string;
-  oldContent: string;
-  newContent: string;
-  fileDiff: string;
-  status: string;
-}
-
 export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
   try {
     execSync(`git fetch origin ${baseBranch}`);
@@ -48,6 +49,8 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
       return [];
     }
 
+    console.log('Changed files:', changedFilesOutput);
+
     const lines = changedFilesOutput.split('\n');
 
     for (const line of lines) {
@@ -55,19 +58,20 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
       let oldContent = '';
       let newContent = '';
       let fileDiff = '';
+      let changedLines: number[] = [];
 
       try {
         fileDiff = execSync(`git diff origin/${baseBranch}...HEAD -- "${filePath}"`).toString().trim();
+        changedLines = extractChangedLines(fileDiff);
       } catch (diffError) {
         console.warn(`Could not get diff for ${filePath}: ${diffError}`);
-        // Continue even if diff fails for a specific file
       }
 
-      if (status === 'A') { // Added
+      if (status === 'A') {
         newContent = fs.readFileSync(filePath, 'utf-8');
-      } else if (status === 'D') { // Deleted
+      } else if (status === 'D') {
         oldContent = execSync(`git show origin/${baseBranch}:"${filePath}"`).toString('utf-8');
-      } else if (status === 'M') { // Modified
+      } else if (status === 'M') {
         oldContent = execSync(`git show origin/${baseBranch}:"${filePath}"`).toString('utf-8');
         newContent = fs.readFileSync(filePath, 'utf-8');
       } else {
@@ -75,7 +79,7 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
         continue;
       }
 
-      changedFiles.push({ filePath, oldContent, newContent, fileDiff, status });
+      changedFiles.push({ filePath, oldContent, newContent, fileDiff, status, changedLines });
     }
 
     return changedFiles;
@@ -83,4 +87,26 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
     console.error('Error getting detailed diff:', error);
     return [];
   }
+}
+
+function extractChangedLines(diff: string): number[] {
+  const lines = diff.split('\n');
+  const changedLines: number[] = [];
+  let currentLine = 0;
+
+  for (const line of lines) {
+    if (line.startsWith('@@')) {
+      const match = line.match(/\+(\d+)/);
+      if (match) {
+        currentLine = parseInt(match[1], 10);
+      }
+    } else if (line.startsWith('+') && !line.startsWith('+++')) {
+      changedLines.push(currentLine);
+      currentLine++;
+    } else if (!line.startsWith('-')) {
+      currentLine++;
+    }
+  }
+
+  return changedLines;
 }
