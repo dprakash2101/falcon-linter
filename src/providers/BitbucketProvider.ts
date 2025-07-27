@@ -3,16 +3,19 @@ import axios, { AxiosError } from 'axios';
 
 export class BitbucketProvider implements GitProvider {
   private apiUrl: string;
-  private token: string;
+  private appPassword: string;
+  private username: string;
 
   constructor(
     private prId: number,
     private workspace: string,
     private repoSlug: string,
-    token: string
+    username: string,
+    appPassword: string
   ) {
     this.apiUrl = `https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/pullrequests/${this.prId}/comments`;
-    this.token = token;
+    this.username = username;
+    this.appPassword = appPassword;
   }
 
   async postReview(comment: string): Promise<void> {
@@ -27,7 +30,7 @@ export class BitbucketProvider implements GitProvider {
         },
         {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Basic ${Buffer.from(`${this.username}:${this.appPassword}`).toString('base64')}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
@@ -47,11 +50,13 @@ export class BitbucketProvider implements GitProvider {
 
   async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string }> {
     try {
+      const authHeader = `Basic ${Buffer.from(`${this.username}:${this.appPassword}`).toString('base64')}`;
+      console.log(`[DEBUG] Using Authorization header: ${authHeader.substring(0, 20)}... (redacted)`); // 🔐 Remove this after testing!
       const response = await axios.get(
         `https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/pullrequests/${this.prId}`,
         {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: authHeader,
           },
         }
       );

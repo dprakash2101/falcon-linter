@@ -26,6 +26,8 @@ program
   // Bitbucket-specific options
   .option('--workspace <workspace>', 'The workspace (for Bitbucket)')
   .option('--repo-slug <repoSlug>', 'The repository slug (for Bitbucket)')
+  .option('--bitbucket-username <username>', 'The username for Bitbucket Basic Auth')
+  .option('--bitbucket-app-password <appPassword>', 'The app password for Bitbucket Basic Auth')
 
   // Token input
   .option('--token <token>', 'OAuth token for Git provider')
@@ -61,6 +63,8 @@ program
         workspace: options.workspace,
         repoSlug: options.repoSlug,
         token: token,
+        username: options.bitbucketUsername,
+        appPassword: options.bitbucketAppPassword,
       });
 
       const ignoreFiles = options.ignoreFiles
