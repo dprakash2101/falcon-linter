@@ -8,12 +8,7 @@
   <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=feature-request">Request Feature</a>
 </p>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/v/falcon-linter?style=for-the-badge" alt="NPM version"></a>
-  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/dm/falcon-linter?style=for-the-badge" alt="NPM downloads"></a>
-  <a href="https://github.com/dprakash2101/falcon-linter/blob/main/LICENSE"><img src="https://img.shields.io/github/license/dprakash2101/falcon-linter?style=for-the-badge" alt="License"></a>
-  <a href="https://github.com/dprakash2101/falcon-linter/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/dprakash2101/falcon-linter/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
-</p>
+
 
 ---
 
