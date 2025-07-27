@@ -1,8 +1,4 @@
-<p align="center">
-  <a href="https://github.com/dprakash2101/falcon-linter">
-    <img src="https://user-images.githubusercontent.com/1287311/230249037-9442ece3-4f3c-45a8-8ff1-3c39b582b14a.png" alt="Logo" width="120" height="120">
-  </a>
-</p>
+
 
 <h1 align="center">Falcon Linter</h1>
 
