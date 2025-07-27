@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { review } from './reviewer';
 import { createProvider } from './providers';
 import * as dotenv from 'dotenv';
-import { glob } from 'glob';
+
 
 dotenv.config();
 
