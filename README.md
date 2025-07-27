@@ -1,25 +1,52 @@
-# StarshipScribe: AI Senior Engineer PR Reviewer
+<div align="center">
+  <a href="https://github.com/dprakash2101/starship-scribe">
+    <img src="https://user-images.githubusercontent.com/1287311/230249037-9442ece3-4f3c-45a8-8ff1-3c39b582b14a.png" alt="Logo" width="120" height="120">
+  </a>
+  <h1 align="center">Starship Scribe</h1>
+  <p align="center">
+    Your AI-powered "Senior Engineer" for automated pull request reviews.
+    <br />
+    <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=bug">Report Bug</a>
+    ·
+    <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=feature-request">Request Feature</a>
+  </p>
+</div>
 
-This command-line interface (CLI) tool leverages the power of Google's Gemini AI to automatically review your pull requests, acting as a "Senior Engineer" to help mentor your team. It provides structured, line-by-line feedback in Markdown format and posts it as a comment directly on your PR.
+<div align="center">
+
+[![NPM version](https://img.shields.io/npm/v/starship-scribe?style=for-the-badge)](https://www.npmjs.com/package/starship-scribe)
+[![NPM downloads](https://img.shields.io/npm/dm/starship-scribe?style=for-the-badge)](https://www.npmjs.com/package/starship-scribe)
+[![License](https://img.shields.io/github/license/dprakash2101/starship-scribe?style=for-the-badge)](https://github.com/dprakash2101/starship-scribe/blob/main/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/dprakash2101/starship-scribe/ci.yml?branch=main&style=for-the-badge)](https://github.com/dprakash2101/starship-scribe/actions/workflows/ci.yml)
+
+</div>
+
+---
+
+## About The Project
+
+**Starship Scribe** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
 
 The goal is to provide helpful, educational, and constructive feedback to help junior engineers improve their code by providing clear, actionable suggestions.
 
-## Features
+## Key Features
 
-- **Senior Engineer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
-- **Detailed, Actionable Feedback:** The review includes the current code, the suggested code, and a detailed reason for the change.
-- **Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
-- **Multi-Provider Support:** Works with both GitHub and Bitbucket.
-- **Configurable:** Use custom prompts and style guides to tailor the review to your project's needs.
-- **CI/CD Friendly:** Designed to be easily integrated into your existing CI/CD pipelines.
+-   **🤖 Senior Engineer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
+-   **📝 Detailed, Actionable Feedback:** The review includes the current code, the suggested code, and a detailed reason for the change.
+-   **💅 Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
+-   **🔄 Multi-Provider Support:** Works with both GitHub and Bitbucket.
+-   **⚙️ Configurable:** Use custom prompts and style guides to tailor the review to your project's needs.
+-   **🚀 CI/CD Friendly:** Designed to be easily integrated into your existing CI/CD pipelines.
 
-## Prerequisites
+## Getting Started
 
-- Node.js (v22 or later)
-- An active Google AI Studio account with a Gemini API key.
-- A GitHub or Bitbucket account.
+### Prerequisites
 
-## Installation
+-   Node.js (v22 or later)
+-   An active Google AI Studio account with a Gemini API key.
+-   A GitHub or Bitbucket account.
+
+### Installation
 
 You can install the tool globally from npm:
 
@@ -29,26 +56,28 @@ npm install -g starship-scribe
 
 Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
 
-## Configuration
+### Configuration
 
 This tool requires API keys and tokens to be set as environment variables. You can set them directly in your CI/CD pipeline's secret management system.
 
-- `GEMINI_API_KEY`: Your API key for the Gemini API.
-- `GITHUB_TOKEN`: A GitHub Personal Access Token with `repo` scope.
-- `BITBUCKET_TOKEN`: A Bitbucket App Password with `pullrequests:write` scope.
+-   `GEMINI_API_KEY`: Your API key for the Gemini API.
+-   `GITHUB_TOKEN`: A GitHub Personal Access Token with `repo` scope.
+-   `BITBUCKET_TOKEN`: A Bitbucket App Password with `pullrequests:write` scope.
 
 ## Usage
 
 ### General Options
 
-- `--provider <provider>`: (Required) The Git provider (`github` or `bitbucket`).
-- `--pr-id <prId>`: (Required) The ID of the pull request to review.
-- `--model <model>`: (Optional) The Gemini model to use. Defaults to `gemini-1.5-flash`.
-- `--prompt <prompt>`: (Optional) A custom prompt for the AI.
-- `--style-guide <styleGuide>`: (Optional) A custom style guide for the AI to follow.
-- `--base-branch <baseBranch>`: (Optional) The base branch to compare against. Defaults to `main`.
+-   `--provider <provider>`: (Required) The Git provider (`github` or `bitbucket`).
+-   `--pr-id <prId>`: (Required) The ID of the pull request to review.
+-   `--model <model>`: (Optional) The Gemini model to use. Defaults to `gemini-1.5-flash`.
+-   `--prompt <prompt>`: (Optional) A custom prompt for the AI.
+-   `--style-guide <styleGuide>`: (Optional) A custom style guide for the AI to follow.
+-   `--base-branch <baseBranch>`: (Optional) The base branch to compare against. Defaults to `main`.
 
-### GitHub
+### Examples
+
+#### GitHub
 
 ```bash
 starship-scribe \
@@ -58,7 +87,7 @@ starship-scribe \
   --repo your-repo-name
 ```
 
-### Bitbucket
+#### Bitbucket
 
 ```bash
 starship-scribe \
@@ -71,32 +100,6 @@ starship-scribe \
 ## Customizing the Review
 
 You can customize the AI's review by providing a custom prompt and a style guide. This allows you to tailor the feedback to your project's specific needs and coding standards.
-
-### Basic Examples
-
-#### GitHub
-
-To review a pull request on GitHub, you need to provide the `owner` and `repo` names.
-
-```bash
-starship-scribe \
-  --provider github \
-  --pr-id 123 \
-  --owner your-github-username \
-  --repo your-repo-name
-```
-
-#### Bitbucket
-
-To review a pull request on Bitbucket, you need to provide the `workspace` and `repo-slug`.
-
-```bash
-starship-scribe \
-  --provider bitbucket \
-  --pr-id 456 \
-  --workspace your-bitbucket-workspace \
-  --repo-slug your-repo-slug
-```
 
 ### Advanced Examples
 
@@ -118,6 +121,7 @@ starship-scribe \
 For more complex prompts, you can pass in a multi-line prompt from a text file.
 
 **`my-prompt.txt`:**
+
 ```
 You are a senior engineer with a focus on clean code and best practices.
 Please review the following pull request and provide feedback on:
@@ -128,6 +132,7 @@ Please review the following pull request and provide feedback on:
 ```
 
 **Command:**
+
 ```bash
 starship-scribe \
   --provider github \
@@ -155,8 +160,6 @@ starship-scribe \
 ### GitHub Actions Example
 
 Create a file named `.github/workflows/ai-review.yml`:
-
-```
 
 ```yaml
 name: AI PR Review
@@ -214,8 +217,25 @@ pipelines:
               --base-branch $BITBUCKET_PR_DESTINATION_BRANCH
 ```
 
+## Contributing
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
 ## License
 
-This project is licensed under the MIT License.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-Authored by Devi Prakash Kandikonda.
+## Author
+
+**Devi Prakash Kandikonda**
+
+-   GitHub: [@dprakash2101](https://github.com/dprakash2101)
+
