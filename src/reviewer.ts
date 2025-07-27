@@ -116,7 +116,7 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
       parts.push(`
 ---
 
-## `${file.filePath}`
+## `+file.filePath+`
 `);
       parts.push(...fileComments);
     }

@@ -96,27 +96,25 @@ export class PromptBuilder {
       ${this.styleGuide}
     `;
 
-    const detailedCodeContext = this.detailedDiff.map(file => `
---- File: ${file.filePath} ---
+    const detailedCodeContext = this.detailedDiff.map(file => {
+  return `--- File: ${file.filePath} ---
 
 --- Old Content ---
-```
+\`\`\`
 ${file.oldContent}
-```
+\`\`\`
 
 --- New Content ---
-```
+\`\`\`
 ${file.newContent}
-```
+\`\`\`
 
 --- Diff ---
-```diff
+\`\`\`diff
 ${file.fileDiff}
-```
-`).join('\n');
+\`\`\`
+`;
+}).join('\n');
 
-    return `${preamble}
-${userContext}
-${detailedCodeContext}`;
   }
 }
