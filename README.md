@@ -26,7 +26,7 @@ The goal is to provide helpful, educational, and constructive feedback to help j
 ## Key Features
 
 -   **🤖 Senior Engineer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
--   **📝 Detailed, Actionable Feedback:** The review includes the current code, the suggested code, and a detailed reason for the change.
+-   **📝 Actionable Feedback with Code Diff:** All review comments now include the `currentCode` and `suggestedCode` in a diff format, making feedback precise and easy to apply.
 -   **🎯 Granular Review Levels:** Choose between `line`-level (precise, diff-based) or `file`-level (high-level summary) reviews to suit your needs.
 -   **💅 Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
 -   **🔄 Multi-Provider Support:** Works with both GitHub and Bitbucket.
