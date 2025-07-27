@@ -116,6 +116,8 @@ ${file.fileDiff}
 `).join('
 ');
 
-    return `${preamble}\n${userContext}\n${detailedCodeContext}`;
+    return `${preamble}
+${userContext}
+${detailedCodeContext}`;
   }
 }
