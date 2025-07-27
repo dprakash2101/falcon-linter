@@ -10,6 +10,7 @@ dotenv.config();
 const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
+    overallSummary: { type: SchemaType.STRING }, // Added overallSummary to schema
     files: {
       type: SchemaType.ARRAY,
       items: {
@@ -51,6 +52,11 @@ const reviewSchema: Schema = {
 
 function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 'file'): string {
   const parts: string[] = ['# AI Senior Engineer Code Review'];
+
+  if (review.overallSummary) {
+    parts.push(`\n## Overall Summary\n`);
+    parts.push(review.overallSummary);
+  }
 
   if (!review || !Array.isArray(review.files) || review.files.length === 0) {
     console.log('No valid files found in review.');
@@ -113,16 +119,12 @@ function formatReviewToMarkdown(review: StructuredReview, reviewLevel: 'line' | 
     }
 
     if (fileComments.length > 0) {
-      parts.push(`
----
-
-## `+file.filePath+`
-`);
+      parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
       parts.push(...fileComments);
     }
   });
 
-  if (parts.length === 1) {
+  if (parts.length === 1 && !review.overallSummary) {
     console.log('No valid suggestions to format.');
     return '';
   }

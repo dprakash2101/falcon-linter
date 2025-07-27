@@ -8,9 +8,9 @@ export interface ReviewComment {
 }
 
 export interface FileLevelComment {
-  currentCode: string;
-  suggestedCode: string;
-  reason: string;
+  currentCode: string; // The exact code snippet to be changed
+  suggestedCode: string; // The suggested code improvement
+  reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
 }
 
 export interface ReviewFile {
@@ -20,6 +20,7 @@ export interface ReviewFile {
 }
 
 export interface StructuredReview {
+  overallSummary?: string; // Optional: A high-level summary of the entire pull request.
   files: ReviewFile[];
 }
 
@@ -54,8 +55,7 @@ export class PromptBuilder {
       }
 
       interface ReviewFile {
-        filePath: string; // The path to the file being reviewed
-        fileLevelComments: FileLevelComment[];
+        filePath: string; // The path to the file being reviewed\n        fileLevelComments: FileLevelComment[];
       }
     `;
 
@@ -79,12 +79,15 @@ export class PromptBuilder {
           - Potential negative consequences or risks of NOT making the change.
           - If applicable, consolidate related feedback for a file into a single, comprehensive suggestion to avoid noise.
 
+      **Optionally, provide an 'overallSummary' at the top-level of the JSON response.** This summary should be a high-level overview of the entire pull request, highlighting major themes, architectural implications, or overall quality.
+
       Please review the following code changes and provide your feedback based on the JSON schema provided.
 
       The JSON object must conform to the following TypeScript interfaces:
       ${this.reviewLevel === 'line' ? lineLevelInterface : fileLevelInterface}
 
       interface StructuredReview {
+        overallSummary?: string; // Optional: A high-level summary of the entire pull request.
         files: ReviewFile[];
       }
     `;
@@ -98,26 +101,25 @@ export class PromptBuilder {
     `;
 
     const detailedCodeContext = this.detailedDiff.map(file => {
-      return `--- File: ${file.filePath} ---
+      return `--- File: ${file.filePath} (Status: ${file.status}) ---
 
 --- Old Content ---
-\`\`\`
+```
 ${file.oldContent}
-\`\`\`
+```
 
 --- New Content ---
-\`\`\`
+```
 ${file.newContent}
-\`\`\`
+```
 
 --- Diff ---
-\`\`\`diff
+```diff
 ${file.fileDiff}
-\`\`\`
+```
 `;
     }).join('\n');
 
-    // ✅ Final return statement for full prompt
     return `${preamble}
 ${userContext}
 ${detailedCodeContext}`;
