@@ -20,15 +20,12 @@ export class BitbucketProvider implements GitProvider {
 
   async postReview(comment: string): Promise<void> {
     try {
-      const truncatedComment = comment.substring(0, 1000); // Truncate to 1000 characters for testing
-      console.log(`[DEBUG] Comment length: ${truncatedComment.length}`);
       const response = await axios.post(
         this.apiUrl,
         {
           content: {
-            raw: truncatedComment,
-            markup: 'MARKDOWN',
-          },
+            raw: comment,
+            },
         },
         {
           headers: {
@@ -43,6 +40,9 @@ export class BitbucketProvider implements GitProvider {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
         console.error(`Error posting review to Bitbucket PR #${this.prId}:`, axiosError.message);
+        if (axiosError.response) {
+          console.error('Bitbucket API Error Response:', axiosError.response.data);
+        }
       } else {
         console.error('Unexpected error:', error);
       }
