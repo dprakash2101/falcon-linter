@@ -72,12 +72,37 @@ starship-scribe \
 
 You can customize the AI's review by providing a custom prompt and a style guide. This allows you to tailor the feedback to your project's specific needs and coding standards.
 
-- `--prompt <prompt>`: Use this to provide a custom prompt for the AI. This can be a simple instruction or a complex, multi-line prompt.
-- `--style-guide <styleGuide>`: Use this to provide a style guide for the AI to follow. This can be a set of rules, a link to a style guide, or a full-blown document.
+### Basic Examples
 
-### Examples
+#### GitHub
 
-#### Simple Prompt
+To review a pull request on GitHub, you need to provide the `owner` and `repo` names.
+
+```bash
+starship-scribe \
+  --provider github \
+  --pr-id 123 \
+  --owner your-github-username \
+  --repo your-repo-name
+```
+
+#### Bitbucket
+
+To review a pull request on Bitbucket, you need to provide the `workspace` and `repo-slug`.
+
+```bash
+starship-scribe \
+  --provider bitbucket \
+  --pr-id 456 \
+  --workspace your-bitbucket-workspace \
+  --repo-slug your-repo-slug
+```
+
+### Advanced Examples
+
+#### Custom Prompt
+
+You can provide a custom prompt to guide the AI's review. This is useful when you want to focus on specific aspects of the code.
 
 ```bash
 starship-scribe \
@@ -85,13 +110,24 @@ starship-scribe \
   --pr-id 123 \
   --owner your-github-username \
   --repo your-repo-name \
-  --prompt "You are a senior engineer reviewing a pull request. Please be concise and to the point."
+  --prompt "As a senior engineer, please review this PR for code style, performance, and security."
 ```
 
 #### Multi-line Prompt from a File
 
-You can also pass in a multi-line prompt from a file:
+For more complex prompts, you can pass in a multi-line prompt from a text file.
 
+**`my-prompt.txt`:**
+```
+You are a senior engineer with a focus on clean code and best practices.
+Please review the following pull request and provide feedback on:
+- Code clarity and readability
+- Adherence to the SOLID principles
+- Potential performance bottlenecks
+- Any security vulnerabilities
+```
+
+**Command:**
 ```bash
 starship-scribe \
   --provider github \
@@ -103,13 +139,15 @@ starship-scribe \
 
 #### Using a Style Guide
 
+You can also provide a style guide for the AI to follow. This ensures that the review is consistent with your project's coding standards.
+
 ```bash
 starship-scribe \
   --provider github \
   --pr-id 123 \
   --owner your-github-username \
   --repo your-repo-name \
-  --style-guide "Follow the Google TypeScript Style Guide."
+  --style-guide "Follow the Google TypeScript Style Guide. Pay close attention to naming conventions and type definitions."
 ```
 
 ## CI/CD Pipeline Integration

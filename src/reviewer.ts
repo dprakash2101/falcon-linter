@@ -103,15 +103,21 @@ export async function review(
   baseBranch: string,
   modelName: string
 ): Promise<void> {
+  console.log(`Getting diff from ${baseBranch}...`);
   const diff = getDiff(baseBranch);
 
   if (!diff) {
     console.log('No changes found.');
     return;
   }
+  console.log('Diff retrieved successfully.');
+  console.log(diff);
 
+  console.log('Building prompt...');
   const promptBuilder = new PromptBuilder(prompt, styleGuide, diff);
   const finalPrompt = promptBuilder.build();
+  console.log('Prompt built successfully.');
+  console.log(finalPrompt);
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({
@@ -127,6 +133,9 @@ export async function review(
   try {
     const result = await model.generateContent(finalPrompt);
     const response = result.response;
+    console.log('Review generated successfully.');
+    console.log(response.text());
+    
     const structuredReview = JSON.parse(response.text()) as StructuredReview;
     const markdownReview = formatReviewToMarkdown(structuredReview);
 
@@ -135,7 +144,9 @@ export async function review(
       return;
     }
 
+    console.log('Posting review...');
     await provider.postReview(markdownReview);
+    console.log('Review posted successfully.');
   } catch (error) {
     console.error('Error generating or parsing review:', error);
   }

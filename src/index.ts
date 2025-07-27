@@ -1,6 +1,3 @@
-
-#!/usr/bin/env node
-
 import { Command } from 'commander';
 import { review } from './reviewer';
 import { createProvider } from './providers';
@@ -27,6 +24,14 @@ program
   .option('--workspace <workspace>', 'The workspace (for Bitbucket)')
   .option('--repo-slug <repoSlug>', 'The repository slug (for Bitbucket)')
   .action(async (options) => {
+    console.log('Starting AI PR Review...');
+    console.log('Options:', {
+      provider: options.provider,
+      prId: options.prId,
+      model: options.model,
+      baseBranch: options.baseBranch,
+    });
+
     try {
       const prId = parseInt(options.prId, 10);
       
@@ -34,9 +39,11 @@ program
       if (options.provider === 'github') {
         token = process.env.GITHUB_TOKEN;
         if (!token) throw new Error('GITHUB_TOKEN environment variable not set');
+        console.log('Using GitHub provider.');
       } else if (options.provider === 'bitbucket') {
         token = process.env.BITBUCKET_TOKEN;
         if (!token) throw new Error('BITBUCKET_TOKEN environment variable not set');
+        console.log('Using Bitbucket provider.');
       } else {
         throw new Error(`Unsupported provider: ${options.provider}`);
       }
@@ -49,7 +56,9 @@ program
         token: token,
       });
 
+      console.log('Reviewing PR...');
       await review(provider, options.prompt, options.styleGuide, options.baseBranch, options.model);
+      console.log('Review complete.');
     } catch (error) {
       console.error('Error during review:', error);
       process.exit(1);
