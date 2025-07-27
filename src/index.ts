@@ -18,6 +18,7 @@ program
   .option('-p, --prompt <prompt>', 'The prompt to use for the review', 'Review this PR for best practices.')
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--base-branch <baseBranch>', 'The base branch to compare against', 'main')
+  .option('--ignore-files <files>', 'A comma-separated list of files to ignore', '')
   // GitHub specific options
   .option('--owner <owner>', 'The repository owner (for GitHub)')
   .option('--repo <repo>', 'The repository name (for GitHub)')
@@ -58,7 +59,14 @@ program
       });
 
       console.log('Reviewing PR...');
-      await review(provider, options.prompt, options.styleGuide, options.baseBranch, options.model);
+      await review(
+        provider,
+        options.prompt,
+        options.styleGuide,
+        options.baseBranch,
+        options.model,
+        options.ignoreFiles.split(',').filter(Boolean)
+      );
       console.log('Review complete.');
     } catch (error) {
       console.error('Error during review:', error);

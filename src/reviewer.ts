@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
 import { PromptBuilder, StructuredReview, ReviewFile } from './prompt';
+import micromatch from 'micromatch';
 
 dotenv.config();
 
@@ -101,15 +102,33 @@ export async function review(
   prompt: string,
   styleGuide: string,
   baseBranch: string,
-  modelName: string
+  modelName: string,
+  ignoreFiles: string[]
 ): Promise<void> {
   console.log(`Getting diff from ${baseBranch}...`);
-  const diff = getDiff(baseBranch);
+  let diff = getDiff(baseBranch);
 
   if (!diff) {
     console.log('No changes found.');
     return;
   }
+
+  if (ignoreFiles.length > 0) {
+    console.log(`Ignoring files matching: ${ignoreFiles.join(', ')}`);
+    const files = diff.split('diff --git ');
+    const filteredFiles = files.filter(file => {
+      if (!file.trim()) return false;
+      const filePath = file.substring(file.indexOf('a/') + 2, file.indexOf(' b/'));
+      return !micromatch.isMatch(filePath, ignoreFiles);
+    });
+    diff = filteredFiles.join('diff --git ');
+  }
+
+  if (!diff) {
+    console.log('No changes found after filtering ignored files.');
+    return;
+  }
+
   console.log('Diff retrieved successfully.');
   console.log(diff);
 

@@ -70,6 +70,7 @@ This tool requires API keys and tokens to be set as environment variables. You c
 -   `--prompt <prompt>`: (Optional) A custom prompt for the AI.
 -   `--style-guide <styleGuide>`: (Optional) A custom style guide for the AI to follow.
 -   `--base-branch <baseBranch>`: (Optional) The base branch to compare against. Defaults to `main`.
+-   `--ignore-files <files>`: (Optional) A comma-separated list of glob patterns to ignore (e.g., `*.json,**/*.yml`).
 
 ### Examples
 
