@@ -8,9 +8,9 @@ export interface ReviewComment {
 }
 
 export interface FileLevelComment {
-  currentCode: string; // The exact code snippet to be changed
-  suggestedCode: string; // The suggested code improvement
-  reason: string; // A detailed explanation of why the change is needed. Explain the benefits (e.g., security, performance, readability, best practices).
+  currentCode: string;
+  suggestedCode: string;
+  reason: string;
 }
 
 export interface ReviewFile {
@@ -97,7 +97,7 @@ export class PromptBuilder {
     `;
 
     const detailedCodeContext = this.detailedDiff.map(file => {
-  return `--- File: ${file.filePath} ---
+      return `--- File: ${file.filePath} ---
 
 --- Old Content ---
 \`\`\`
@@ -114,7 +114,11 @@ ${file.newContent}
 ${file.fileDiff}
 \`\`\`
 `;
-}).join('\n');
+    }).join('\n');
 
+    // ✅ Final return statement for full prompt
+    return `${preamble}
+${userContext}
+${detailedCodeContext}`;
   }
 }
