@@ -64,7 +64,7 @@ program
       });
 
       const ignoreFiles = options.ignoreFiles
-        ? options.ignoreFiles.split(',').map(s => s.trim()).filter(Boolean)
+        ? options.ignoreFiles.split(',').map((s: string) => s.trim()).filter(Boolean)
         : [];
 
       await review(
