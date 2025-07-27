@@ -1,4 +1,4 @@
-import { getDiff, globFiles, getDetailedDiff, DetailedFileChange } from './git';
+import { getDetailedDiff, DetailedFileChange } from './git';
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './providers/types';
