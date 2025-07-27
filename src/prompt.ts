@@ -41,93 +41,113 @@ export class PromptBuilder {
   }
 
   private escapeCode(code: string): string {
-    return code.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    // Escape triple backticks only to avoid breaking markdown blocks
+    return code.replace(/```/g, '\\`\\`\\`');
   }
 
   build(): string {
     const schemaDefinition = `
-      interface ReviewComment {
-        line?: number;
-        currentCode: string;
-        suggestedCode: string;
-        reason: string;
-        category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
-        severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
-      }
+interface ReviewComment {
+  line?: number;
+  currentCode: string;
+  suggestedCode: string;
+  reason: string;
+  category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+}
 
-      interface ReviewFile {
-        filePath: string;
-        comments: ReviewComment[];
-      }
+interface ReviewFile {
+  filePath: string;
+  comments: ReviewComment[];
+}
 
-      interface StructuredReview {
-        overallSummary: string;
-        positiveFeedback: string[];
-        files: ReviewFile[];
-      }
-    `;
+interface StructuredReview {
+  overallSummary: string;
+  positiveFeedback: string[];
+  files: ReviewFile[];
+}
+`.trim();
 
     const preamble = `
-      You are a Senior Software Engineer reviewing a pull request (PR) for a junior engineer. Your goal is to provide constructive, educational, and actionable feedback to help them improve their coding skills while ensuring high-quality code.
+You are a **Senior Software Engineer** reviewing a pull request (PR) created by a **Junior Developer**.
 
-      **Review Guidelines**:
-      - **Context Awareness**: Use the PR title and description to understand the intent and scope of the changes.
-      - **Prioritize Impact**: Focus on critical issues (security, performance, bugs) before minor style issues. Limit suggestions to 5 per file to avoid overwhelming feedback.
-      - **Concise Feedback**: Provide code snippets (max 5 lines) and explanations (max 100 words) that are clear and actionable.
-      - **Educational Tone**: Explain the issue, benefits of the suggestion, and reference the style guide or best practices (e.g., OWASP, Clean Code principles).
-      - **Positive Reinforcement**: Include 2-3 specific positive feedback points in 'positiveFeedback' to highlight strengths.
-      - **Category and Severity**: Use only the following for 'category': SECURITY, PERFORMANCE, READABILITY, BUG, DESIGN, REFACTOR, STYLE. Use only the following for 'severity': CRITICAL, HIGH, MEDIUM, LOW, INFO.
-      - **Structured Output**: Follow the JSON schema exactly, ensuring all fields are populated correctly.
+### 🎯 Goal
+Provide **constructive, actionable, and educational** feedback to improve code quality and developer skills.
 
-      **JSON Output**:
-      - Provide an 'overallSummary' (150 words max) summarizing key changes, strengths, and concerns.
-      - Include 'positiveFeedback' with specific praises (2-3 items).
-      - List 'files' with targeted comments, using 'line' for line-level feedback when reviewLevel is 'line'.
+### 🧭 Instructions
+- **Review Level**: \`${this.reviewLevel.toUpperCase()}\`
+- Focus on high-impact issues first: \`SECURITY\`, \`PERFORMANCE\`, and \`BUG\`.
+- Max 5 comments per file.
+- Feedback must include:
+  - \`line\` (optional, if in line mode)
+  - \`currentCode\`: problematic code snippet (max 5 lines)
+  - \`suggestedCode\`: improved version (max 5 lines)
+  - \`reason\`: explanation (max 100 words)
+  - \`category\` and \`severity\` as per the schema
+- Provide 2–3 specific praises under \`positiveFeedback\`
+- Output must conform exactly to the schema below. Do not hallucinate fields or values.
 
-      **Schema**:
-      ${schemaDefinition}
-    `;
+### 📄 JSON Output Schema
+${schemaDefinition}
+`.trim();
 
     const prContext = `
-      ## Pull Request Context
-      ### Title
-      ${this.escapeCode(this.prTitle)}
+## 📝 Pull Request Context
 
-      ### Description
-      ${this.escapeCode(this.prBody)}
-    `;
+### 🔖 Title
+${this.escapeCode(this.prTitle)}
+
+### 🧾 Description
+${this.escapeCode(this.prBody)}
+`.trim();
 
     const userContext = `
-      ## User Context
-      ### User Prompt
-      ${this.escapeCode(this.userPrompt)}
+## 👤 User Input
 
-      ### Style Guide
-      ${this.escapeCode(this.styleGuide)}
-    `;
+### 🧠 Prompt
+${this.escapeCode(this.userPrompt)}
 
-    const detailedCodeContext = this.detailedDiff.map(file => `
-      ## File: ${this.escapeCode(file.filePath)} (Status: ${file.status || 'UNKNOWN'})
-      
-      ### Old Content
-      \`\`\`
-      ${this.escapeCode(file.oldContent || '')}
-      \`\`\`
-      
-      ### New Content
-      \`\`\`
-      ${this.escapeCode(file.newContent || '')}
-      \`\`\`
-      
-      ### Diff
-      \`\`\`diff
-      ${this.escapeCode(file.fileDiff)}
-      \`\`\`
-      
-      ### Changed Lines
-      ${file.changedLines.join(', ')}
-    `).join('\n\n');
+### 📘 Style Guide
+${this.escapeCode(this.styleGuide)}
+`.trim();
 
-    return [preamble, prContext, userContext, detailedCodeContext].join('\n\n').trim();
+    const sortedFiles = [...this.detailedDiff].sort((a, b) =>
+      a.filePath.localeCompare(b.filePath)
+    );
+
+    const detailedCodeContext = sortedFiles.map(file => {
+      const sortedLines = [...(file.changedLines || [])].sort((a, b) => a - b);
+      return `
+## 📂 File: \`${this.escapeCode(file.filePath)}\` (Status: ${file.status || 'UNKNOWN'})
+
+### 🔍 Original Code
+\`\`\`ts
+${this.escapeCode(file.oldContent || '').trim()}
+\`\`\`
+
+### ✏️ Modified Code
+\`\`\`ts
+${this.escapeCode(file.newContent || '').trim()}
+\`\`\`
+
+### 🧾 Diff
+\`\`\`diff
+${this.escapeCode(file.fileDiff || '').trim()}
+\`\`\`
+
+### 📌 Changed Lines
+${sortedLines.join(', ') || 'N/A'}
+`.trim();
+    }).join('\n\n');
+
+    return [
+      preamble,
+      '',
+      prContext,
+      '',
+      userContext,
+      '',
+      detailedCodeContext
+    ].join('\n\n').trim();
   }
 }

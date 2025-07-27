@@ -81,11 +81,7 @@ function formatReviewToMarkdown(review: StructuredReview): string {
       parts.push(`**Category:** ${comment.category} | **Severity:** ${comment.severity}\n`);
       parts.push('**Reason:**');
       parts.push(comment.reason);
-      parts.push('\n```diff');
-      const currentLines = comment.currentCode.split('\n').map(line => `- ${line.trim()}`);
-      const suggestedLines = comment.suggestedCode.split('\n').map(line => `+ ${line.trim()}`);
-      parts.push(...currentLines, ...suggestedLines);
-      parts.push('```');
+      parts.push('\n**Current Code:**\n```');      parts.push(comment.currentCode);      parts.push('```');      parts.push('\n**Suggested Code:**\n```');      parts.push(comment.suggestedCode);      parts.push('```');
     });
   });
 
