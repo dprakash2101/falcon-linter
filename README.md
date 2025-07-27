@@ -1,25 +1,25 @@
-<div align="center">
+<p align="center">
   <a href="https://github.com/dprakash2101/starship-scribe">
     <img src="https://user-images.githubusercontent.com/1287311/230249037-9442ece3-4f3c-45a8-8ff1-3c39b582b14a.png" alt="Logo" width="120" height="120">
   </a>
-  <h1 align="center">Starship Scribe</h1>
-  <p align="center">
-    Your AI-powered "Senior Engineer" for automated pull request reviews.
-    <br />
-    <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=bug">Report Bug</a>
-    ·
-    <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=feature-request">Request Feature</a>
-  </p>
-</div>
+</p>
 
-<div align="center">
+<h1 align="center">Starship Scribe</h1>
 
-[![NPM version](https://img.shields.io/npm/v/starship-scribe?style=for-the-badge)](https://www.npmjs.com/package/starship-scribe)
-[![NPM downloads](https://img.shields.io/npm/dm/starship-scribe?style=for-the-badge)](https://www.npmjs.com/package/starship-scribe)
-[![License](https://img.shields.io/github/license/dprakash2101/starship-scribe?style=for-the-badge)](https://github.com/dprakash2101/starship-scribe/blob/main/LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/dprakash2101/starship-scribe/ci.yml?branch=main&style=for-the-badge)](https://github.com/dprakash2101/starship-scribe/actions/workflows/ci.yml)
+<p align="center">
+  Your AI-powered "Senior Engineer" for automated pull request reviews.
+  <br />
+  <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=bug">Report Bug</a>
+  ·
+  <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=feature-request">Request Feature</a>
+</p>
 
-</div>
+<p align="center">
+  <a href="https://www.npmjs.com/package/starship-scribe"><img src="https://img.shields.io/npm/v/starship-scribe?style=for-the-badge" alt="NPM version"></a>
+  <a href="https://www.npmjs.com/package/starship-scribe"><img src="https://img.shields.io/npm/dm/starship-scribe?style=for-the-badge" alt="NPM downloads"></a>
+  <a href="https://github.com/dprakash2101/starship-scribe/blob/main/LICENSE"><img src="https://img.shields.io/github/license/dprakash2101/starship-scribe?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/dprakash2101/starship-scribe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/dprakash2101/starship-scribe/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
+</p>
 
 ---
 
@@ -238,4 +238,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **Devi Prakash Kandikonda**
 
 -   GitHub: [@dprakash2101](https://github.com/dprakash2101)
-
