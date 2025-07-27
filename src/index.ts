@@ -13,7 +13,7 @@ program
   .requiredOption('--provider <provider>', 'The Git provider (e.g., github, bitbucket)')
   .requiredOption('--pr-id <prId>', 'The pull request ID')
   // Model and review options
-  .option('--model <model>', 'The Gemini model to use', 'gemini-1.5-flash')
+  .option('--model <model>', 'The Gemini model to use', 'gemini-2.0-flash')
   .option('-p, --prompt <prompt>', 'The prompt to use for the review', 'Review this PR for best practices.')
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--base-branch <baseBranch>', 'The base branch to compare against', 'main')

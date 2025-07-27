@@ -1,31 +1,31 @@
 <p align="center">
-  <a href="https://github.com/dprakash2101/starship-scribe">
+  <a href="https://github.com/dprakash2101/falcon-linter">
     <img src="https://user-images.githubusercontent.com/1287311/230249037-9442ece3-4f3c-45a8-8ff1-3c39b582b14a.png" alt="Logo" width="120" height="120">
   </a>
 </p>
 
-<h1 align="center">Starship Scribe</h1>
+<h1 align="center">Falcon Linter</h1>
 
 <p align="center">
   Your AI-powered "Senior Engineer" for automated pull request reviews.
   <br />
-  <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=bug">Report Bug</a>
+  <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=bug">Report Bug</a>
   ·
-  <a href="https://github.com/dprakash2101/starship-scribe/issues/new?labels=feature-request">Request Feature</a>
+  <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=feature-request">Request Feature</a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/starship-scribe"><img src="https://img.shields.io/npm/v/starship-scribe?style=for-the-badge" alt="NPM version"></a>
-  <a href="https://www.npmjs.com/package/starship-scribe"><img src="https://img.shields.io/npm/dm/starship-scribe?style=for-the-badge" alt="NPM downloads"></a>
-  <a href="https://github.com/dprakash2101/starship-scribe/blob/main/LICENSE"><img src="https://img.shields.io/github/license/dprakash2101/starship-scribe?style=for-the-badge" alt="License"></a>
-  <a href="https://github.com/dprakash2101/starship-scribe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/dprakash2101/starship-scribe/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/v/falcon-linter?style=for-the-badge" alt="NPM version"></a>
+  <a href="https://www.npmjs.com/package/falcon-linter"><img src="https://img.shields.io/npm/dm/falcon-linter?style=for-the-badge" alt="NPM downloads"></a>
+  <a href="https://github.com/dprakash2101/falcon-linter/blob/main/LICENSE"><img src="https://img.shields.io/github/license/dprakash2101/falcon-linter?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/dprakash2101/falcon-linter/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/dprakash2101/falcon-linter/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
 </p>
 
 ---
 
 ## About The Project
 
-**Starship Scribe** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
+**Falcon Linter** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
 
 The goal is to provide helpful, educational, and constructive feedback to help junior engineers improve their code by providing clear, actionable suggestions.
 
@@ -51,7 +51,7 @@ The goal is to provide helpful, educational, and constructive feedback to help j
 You can install the tool globally from npm:
 
 ```bash
-npm install -g starship-scribe
+npm install -g falcon-linter
 ```
 
 Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
@@ -70,7 +70,7 @@ This tool requires API keys and tokens to be set as environment variables. You c
 
 -   `--provider <provider>`: (Required) The Git provider (`github` or `bitbucket`).
 -   `--pr-id <prId>`: (Required) The ID of the pull request to review.
--   `--model <model>`: (Optional) The Gemini model to use. Defaults to `gemini-1.5-flash`.
+-   `--model <model>`: (Optional) The Gemini model to use. Defaults to `gemini-2.0-flash`.
 -   `--prompt <prompt>`: (Optional) A custom prompt for the AI.
 -   `--style-guide <styleGuide>`: (Optional) A custom style guide for the AI to follow.
 -   `--base-branch <baseBranch>`: (Optional) The base branch to compare against. Defaults to `main`.
@@ -80,7 +80,7 @@ This tool requires API keys and tokens to be set as environment variables. You c
 #### GitHub
 
 ```bash
-starship-scribe \
+falcon-linter \
   --provider github \
   --pr-id 123 \
   --owner your-github-username \
@@ -90,7 +90,7 @@ starship-scribe \
 #### Bitbucket
 
 ```bash
-starship-scribe \
+falcon-linter \
   --provider bitbucket \
   --pr-id 456 \
   --workspace your-bitbucket-workspace \
@@ -108,7 +108,7 @@ You can customize the AI's review by providing a custom prompt and a style guide
 You can provide a custom prompt to guide the AI's review. This is useful when you want to focus on specific aspects of the code.
 
 ```bash
-starship-scribe \
+falcon-linter \
   --provider github \
   --pr-id 123 \
   --owner your-github-username \
@@ -134,7 +134,7 @@ Please review the following pull request and provide feedback on:
 **Command:**
 
 ```bash
-starship-scribe \
+falcon-linter \
   --provider github \
   --pr-id 123 \
   --owner your-github-username \
@@ -147,7 +147,7 @@ starship-scribe \
 You can also provide a style guide for the AI to follow. This ensures that the review is consistent with your project's coding standards.
 
 ```bash
-starship-scribe \
+falcon-linter \
   --provider github \
   --pr-id 123 \
   --owner your-github-username \
@@ -187,7 +187,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx starship-scribe \
+          npx falcon-linter \
             --provider github \
             --pr-id ${{ github.event.pull_request.number }} \
             --owner ${{ github.repository_owner }} \
@@ -207,9 +207,9 @@ pipelines:
           name: AI Code Review
           image: node:22
           script:
-            - npm i -g starship-scribe
+            - npm i -g falcon-linter
             - >
-              starship-scribe
+              falcon-linter
               --provider bitbucket
               --pr-id $BITBUCKET_PULL_REQUEST_ID
               --workspace $BITBUCKET_WORKSPACE
