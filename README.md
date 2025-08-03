@@ -104,25 +104,24 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
     *   Add the following variables, making sure to check the **Secured** box for each:
         *   `BITBUCKET_USERNAME`: Your Bitbucket username.
         *   `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
-        *   `GEMINI_API_KEY`: Your Google Gemini API key (see instructions above).
+        *   `GEMINI_API_KEY`: Your Google Gemini API key.
 
 2.  **Create a `bitbucket-pipelines.yml` File**:
-    *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository:
+    *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository with the following content. This example is a minimal, copy-paste ready template.
 
-    ```yml
+    ```yaml
     image: node:22
 
 pipelines:
   pull-requests:
     '*':
       - step:
-          name: Run Falcon Linter
+          name: Run Falcon Linter Review
           script:
-            # The fetch-depth is required to get the base branch for diffing
-            - git config --global --add safe.directory $BITBUCKET_CLONE_DIR
+            # Fetch the full git history to allow diffing against the target branch
             - git fetch --unshallow || git fetch --all
-            - npm install -g falcon-linter
-            - falcon-linter \
+            # Run the linter using npx, which handles the package download and execution
+            - npx falcon-linter \
                 --provider bitbucket \
                 --pr-id $BITBUCKET_PULL_REQUEST_ID \
                 --workspace $BITBUCKET_WORKSPACE \
