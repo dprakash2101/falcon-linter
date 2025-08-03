@@ -110,7 +110,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
     *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository with the following content. This example is a minimal, copy-paste ready template.
 
     ```yaml
-    image: node:22
+image: node:22
 
 pipelines:
   pull-requests:
@@ -126,7 +126,7 @@ pipelines:
                 --pr-id $BITBUCKET_PULL_REQUEST_ID \
                 --workspace $BITBUCKET_WORKSPACE \
                 --repo-slug $BITBUCKET_REPO_SLUG
-    ```
+```
 
 ---
 
