@@ -8,7 +8,4 @@ export interface ProviderOptions {
   repo?: string;
   workspace?: string;
   repoSlug?: string;
-  token?: string;
-  username?: string;
-  appPassword?: string;
 }

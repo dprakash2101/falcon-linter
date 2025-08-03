@@ -1,8 +1,18 @@
 import { getDetailedDiff, DetailedFileChange } from './git';
-import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
+import {
+  GoogleGenerativeAI,
+  SchemaType,
+  Schema,
+  Part,
+} from '@google/generative-ai';
 import * as dotenv from 'dotenv';
-import { GitProvider } from './providers/types';
-import { PromptBuilder, StructuredReview, ReviewFile, ReviewComment } from './prompt';
+import { GitProvider } from './models/provider';
+import { PromptBuilder } from './prompt';
+import {
+  StructuredReview,
+  ReviewFile,
+  ReviewComment,
+} from './models/review';
 import micromatch from 'micromatch';
 
 dotenv.config();

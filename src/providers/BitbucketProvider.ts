@@ -1,5 +1,6 @@
-import { GitProvider } from './types';
+import { GitProvider } from '../models/provider';
 import axios, { AxiosError } from 'axios';
+import config from '../config';
 
 export class BitbucketProvider implements GitProvider {
   private apiUrl: string;
@@ -9,13 +10,16 @@ export class BitbucketProvider implements GitProvider {
   constructor(
     private prId: number,
     private workspace: string,
-    private repoSlug: string,
-    username: string,
-    appPassword: string
+    private repoSlug: string
   ) {
     this.apiUrl = `https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/pullrequests/${this.prId}/comments`;
-    this.username = username;
-    this.appPassword = appPassword;
+    if (!config.BITBUCKET_USERNAME || !config.BITBUCKET_APP_PASSWORD) {
+      throw new Error(
+        'BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD are required for Bitbucket provider'
+      );
+    }
+    this.username = config.BITBUCKET_USERNAME;
+    this.appPassword = config.BITBUCKET_APP_PASSWORD;
   }
 
   async postReview(comment: string): Promise<void> {
