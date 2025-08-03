@@ -102,19 +102,14 @@ ${this.escapeCode(this.styleGuide)}
         diff: f.fileDiff || '',
       }));
 
-    const filesSection: Part = {
-      inlineData: {
-        mimeType: 'application/json',
-        data: Buffer.from(JSON.stringify({ files_to_review: fileObjects })).toString('base64')
-      }
-    };
+    const filesToReview = JSON.stringify({ files_to_review: fileObjects });
 
     return [
       preamble,
       prContext,
       userContext,
       'Please review the following files:',
-      filesSection
+      filesToReview
     ];
   }
 }
