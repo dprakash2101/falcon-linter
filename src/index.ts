@@ -11,7 +11,7 @@ program
   .description('A CLI tool to review PRs using Gemini AI')
   .requiredOption('--provider <provider>', 'The Git provider to use (github or bitbucket)')
   .requiredOption('--pr-id <prId>', 'The pull request ID')
-  .option('--model <model>', 'The Gemini model to use', 'gemini-1.5-flash')
+  .option('--model <model>', 'The Gemini model to use', 'gemini-2.0-flash')
   .option('-p, --prompt <prompt>', 'The prompt to use for the review', 'Review this PR for best practices.')
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--ignore-files <files>', 'A comma-separated list of glob patterns to ignore', '')

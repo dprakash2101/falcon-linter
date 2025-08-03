@@ -1,10 +1,18 @@
 # Falcon Linter
 
-An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.
+<p align="center">
+  <img src="https://i.imgur.com/s4qQJjC.png" alt="Falcon Linter" width="200"/>
+</p>
+
+<p align="center">
+  An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.
+</p>
+
+---
 
 Falcon Linter uses Google's Gemini AI to analyze your pull requests and provide feedback on best practices, potential bugs, and style violations. It is designed to be integrated directly into your CI/CD pipeline to automate code reviews securely.
 
-## Features
+## ✨ Features
 
 -   **AI-Powered Reviews**: Get intelligent feedback on your code.
 -   **GitHub & Bitbucket Integration**: Works with both major Git providers.
@@ -14,14 +22,14 @@ Falcon Linter uses Google's Gemini AI to analyze your pull requests and provide 
 
 ---
 
-## Getting Started: CI/CD Integration
+## 🚀 Getting Started: CI/CD Integration
 
 The recommended way to use Falcon Linter is in a CI/CD environment.
 
 ### For GitHub (GitHub Actions)
 
 1.  **Add Secrets to your Repository**:
-    *   Go to your repository's **Settings** > **Secrets and variables** > **Actions**, or click [here](https://github.com/dprakash2101/falcon-linter/settings/secrets/actions) to go directly to the secrets page for this repository (replace with your repository URL).
+    *   Go to your repository's **Settings** > **Secrets and variables** > **Actions**.
     *   Click **New repository secret** and add the following:
         *   `FALCON_LINTER_GITHUB_TOKEN`: A [GitHub Personal Access Token](https://github.com/settings/tokens) with the `repo` scope.
         *   `GEMINI_API_KEY`: Your Google Gemini API key.
@@ -48,8 +56,6 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
 
           - name: Install Node.js
             uses: actions/setup-node@v4
-            with:
-              node-version: '20'
 
           - name: Install Falcon Linter
             run: npm install -g falcon-linter
@@ -69,7 +75,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
 ### For Bitbucket (Bitbucket Pipelines)
 
 1.  **Add Repository Variables**:
-    *   Go to your repository's **Repository settings** > **Pipelines** > **Repository variables**, or click [here](https://bitbucket.org/dprakash2101/falcon-linter/admin/pipelines/repository-variables) to go directly to the variables page for this repository (replace with your repository URL).
+    *   Go to your repository's **Repository settings** > **Pipelines** > **Repository variables**.
     *   Add the following variables, making sure to check the **Secured** box for each:
         *   `BITBUCKET_USERNAME`: Your Bitbucket username.
         *   `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
@@ -79,7 +85,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
     *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository:
 
     ```yaml
-    image: node:20
+    image: node:22
 
 pipelines:
   pull-requests:
@@ -100,13 +106,13 @@ pipelines:
 
 ---
 
-## Advanced Configuration
+## 🛠️ Advanced Configuration
 
 You can customize the linter's behavior by adding the following options to the `falcon-linter` command in your CI/CD workflow file.
 
 ### `--model <model>`
 Specifies the Gemini model to use for the review.
--   **Default**: `gemini-1.5-flash`
+-   **Default**: `gemini-2.0-flash`
 -   **Example**: `--model gemini-1.5-pro-latest`
 
 ### `--prompt <prompt>`
@@ -145,14 +151,14 @@ The level of review to perform.
                 --owner ${{ github.repository_owner }} \
                 --repo ${{ github.event.repository.name }} \
                 --model gemini-1.5-pro-latest \
-                --prompt "Please check for logical errors and suggest improvements."
-                --ignore-files "**/migrations/**,**/*.md"
+                --prompt "Please check for logical errors and suggest improvements." \
+                --ignore-files "**/migrations/**,**/*.md" \
                 --review-level line
 ```
 
 ---
 
-## Local Testing
+## 💻 Local Testing
 
 For debugging or testing purposes, you can run the linter locally.
 
@@ -187,10 +193,13 @@ For debugging or testing purposes, you can run the linter locally.
           --repo-slug <your-repo-slug>
         ```
 
-## Author
+## 👨‍💻 Author
 
 **Devi Prakash Kandikonda**
 
-## License
+-   **GitHub**: [dprakash2101](https://github.com/dprakash2101)
+-   **Email**: deviprakash9321@gmail.com
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
