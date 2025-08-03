@@ -34,9 +34,6 @@ export class PromptBuilder {
     if (!prTitle?.trim()) {
       throw new Error('prTitle cannot be empty or whitespace');
     }
-    if (!prBody?.trim()) {
-      throw new Error('prBody cannot be empty or whitespace');
-    }
     if (!['line', 'file'].includes(reviewLevel)) {
       throw new Error('reviewLevel must be either "line" or "file"');
     }
