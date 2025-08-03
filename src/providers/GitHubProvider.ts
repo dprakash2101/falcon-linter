@@ -1,5 +1,6 @@
-import { GitProvider } from './types';
+import { GitProvider } from '../models/provider';
 import { Octokit } from '@octokit/rest';
+import config from '../config';
 
 export class GitHubProvider implements GitProvider {
   private octokit: Octokit;
@@ -7,10 +8,12 @@ export class GitHubProvider implements GitProvider {
   constructor(
     private prId: number,
     private owner: string,
-    private repo: string,
-    token: string
+    private repo: string
   ) {
-    this.octokit = new Octokit({ auth: token });
+    if (!config.GITHUB_TOKEN) {
+      throw new Error('GITHUB_TOKEN is required for GitHub provider');
+    }
+    this.octokit = new Octokit({ auth: config.GITHUB_TOKEN });
   }
 
   async postReview(comment: string): Promise<void> {

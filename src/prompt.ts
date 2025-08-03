@@ -1,24 +1,11 @@
 import { DetailedFileChange } from './git';
-
-export interface ReviewComment {
-  line?: number;
-  currentCode: string;
-  suggestedCode: string;
-  reason: string;
-  category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
-}
-
-export interface ReviewFile {
-  filePath: string;
-  comments: ReviewComment[];
-}
-
-export interface StructuredReview {
-  overallSummary: string;
-  positiveFeedback: string[];
-  files: ReviewFile[];
-}
+import { Part } from '@google/generative-ai';
+import {
+  ReviewComment,
+  ReviewFile,
+  StructuredReview,
+} from './models/review';
+import { basename } from 'path';
 
 export class PromptBuilder {
   constructor(
@@ -45,7 +32,7 @@ export class PromptBuilder {
     return code.replace(/`/g, '\\`');
   }
 
-  public build(): string {
+  public build(): (string | Part)[] {
     const schemaDefinition = `
 interface ReviewComment {
   line?: number;
@@ -69,8 +56,8 @@ interface StructuredReview {
 `.trim();
 
     const preamble = `
-You are a senior software engineer performing a code review.  
-Provide **only** structured feedback in JSON following the given schema.  
+You are a senior software engineer performing a code review.
+Provide **only** structured feedback in JSON following the given schema.
 Do **not** reprint the full original or modified code blocks—use them only to inform your comments.
 
 You will be given, for each file:
@@ -80,8 +67,8 @@ You will be given, for each file:
 - fileDiff: a unified diff between oldContent and newContent.
 - changedLines: list of changed line numbers in the new file.
 
-Use **only** fileDiff to identify changes.  
-Use oldContent/newContent only to verify correctness.  
+Use **only** fileDiff to identify changes.
+Use oldContent/newContent only to verify correctness.
 
 Return JSON matching this schema exactly (no extra fields, no markdown):
 ${schemaDefinition}
@@ -107,24 +94,27 @@ ${this.escapeCode(this.styleGuide)}
     const fileObjects = this.detailedDiff
       .sort((a, b) => a.filePath.localeCompare(b.filePath))
       .map(f => ({
-        filePath: f.filePath,
-        oldContent: f.oldContent || '',
-        newContent: f.newContent || '',
-        fileDiff: f.fileDiff || '',
-        changedLines: f.changedLines || []
+        file_path: f.filePath,
+        file_name: basename(f.filePath),
+        change_status: f.status,
+        old_content: f.oldContent || '',
+        new_content: f.newContent || '',
+        diff: f.fileDiff || '',
       }));
 
-    const filesSection = `Files to review:
-${JSON.stringify(fileObjects, null, 2)}`;
+    const filesSection: Part = {
+      inlineData: {
+        mimeType: 'application/json',
+        data: JSON.stringify({ files_to_review: fileObjects })
+      }
+    };
 
     return [
       preamble,
-      '',
       prContext,
-      '',
       userContext,
-      '',
+      'Please review the following files:',
       filesSection
-    ].join('\n\n');
+    ];
   }
 }

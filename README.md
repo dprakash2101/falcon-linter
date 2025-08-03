@@ -1,246 +1,198 @@
-<h1 align="center">Falcon Linter</h1>
+# Falcon Linter
 
-<p align="center">
-  Your AI-powered "Falcon PR Reviewer" for automated pull request reviews.
-  <br />
-  <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=bug">Report Bug</a>
-  ·
-  <a href="https://github.com/dprakash2101/falcon-linter/issues/new?labels=feature-request">Request Feature</a>
-</p>
+**Falcon Linter** is a powerful command-line interface (CLI) tool that harnesses Google's Gemini AI to provide automated, senior-engineer-level code reviews for your pull requests (PRs). It delivers structured, line-by-line feedback in Markdown format, posted directly as comments on your PRs, fostering a mentorship-like experience for your team.
 
-[![Install with npm](https://img.shields.io/badge/Install%20with-npm-red?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/falcon-linter)
-[![Install from GitHub](https://img.shields.io/badge/Install%20from-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/dprakash2101/falcon-linter)
-
-
+The goal is to empower developers, especially junior engineers, with clear, actionable, and educational suggestions to elevate code quality.
 
 ---
 
-## About The Project
+## ✨ Key Features
 
-**Falcon Linter** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
+- **🤖 Senior Engineer Persona**: Intelligent code reviews powered by Gemini AI, mimicking a senior engineer's perspective.
+- **📝 Actionable Feedback with Diffs**: Comments include `currentCode` and `suggestedCode` in a diff format for precise, easy-to-apply suggestions.
+- **🧠 Deep Contextual Analysis**: Provides Gemini with full file content (old and new) and detailed diffs for highly relevant reviews.
+- **🎯 Flexible Review Levels**: Choose `line`-level (granular, diff-based) or `file`-level (high-level summary) reviews.
+- **💅 Polished Markdown Output**: Feedback is formatted in clean, readable Markdown with diff-style code blocks.
+- **🔄 Multi-Platform Support**: Compatible with GitHub and Bitbucket.
+- **⚙️ Highly Configurable**: Customize reviews with tailored prompts and style guides.
+- **🚀 CI/CD Integration**: Seamlessly integrates into your CI/CD pipelines for automated workflows.
 
-The goal is to provide helpful, educational, and constructive feedback to help junior engineers improve their code by providing clear, actionable suggestions.
+---
 
-## Key Features
-
--   **🤖 Falcon PR Reviewer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
--   **📝 Actionable Feedback with Code Diff:** All review comments now include the `currentCode` and `suggestedCode` in a diff format, making feedback precise and easy to apply.
--   **🧠 Enhanced Contextual Understanding:** Provides Gemini with full file content (old and new) and detailed diffs for superior review quality and relevance.
--   **🎯 Granular Review Levels:** Choose between `line`-level (precise, diff-based) or `file`-level (high-level summary) reviews to suit your needs.
--   **💅 Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
--   **🔄 Multi-Provider Support:** Works with both GitHub and Bitbucket.
--   **⚙️ Configurable:** Use custom prompts and style guides to tailor the review to your project's needs.
--   **🚀 CI/CD Friendly:** Designed to be easily integrated into your existing CI/CD pipelines.
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
--   Node.js (v22 or later)
--   An active Google AI Studio account with a Gemini API key.
--   A GitHub or Bitbucket account.
+Ensure you have the following before starting:
+
+- **Node.js**: Version 22 or later
+- **GitHub or Bitbucket Account**: For PR integration
+- **Google Gemini API Key**: Required for AI-powered reviews
+
+### Obtaining a Free Gemini API Key
+
+1. Visit [Google AI Studio](https://aistudio.google.com/).
+2. Sign in with your Google account.
+3. Navigate to **"Get API key"** in the top left corner.
+4. Click **"Create API key"**.
+5. Copy the generated API key for use.
 
 ### Installation
 
-You can install the tool globally from npm:
+Install Falcon Linter globally via npm:
 
 ```bash
 npm install -g falcon-linter
 ```
 
-Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
+Alternatively, use `npx` for direct integration in CI/CD pipelines without global installation.
 
-#### Git
+---
 
-The library can also be installed directly from the Git repository:
+## 🔧 CI/CD Integration
 
-```bash
-npm install dprakash2101/falcon-linter
-```
+Falcon Linter is designed for seamless integration into CI/CD workflows.
 
-### Configuration
+### GitHub (GitHub Actions)
 
-This tool requires API keys and tokens to be set as environment variables. You can set them directly in your CI/CD pipeline's secret management system.
+1. **Add Repository Secrets**:
+   - Go to **Settings** > **Secrets and variables** > **Actions** in your repository.
+   - Add the following secrets:
+     - `FALCON_LINTER_GITHUB_TOKEN`: A [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope.
+     - `GEMINI_API_KEY`: Your Google Gemini API key.
 
--   `GEMINI_API_KEY`: Your API key for the Gemini API.
--   `GITHUB_TOKEN`: A GitHub Personal Access Token with `repo` scope.
--   `BITBUCKET_TOKEN`: A Bitbucket App Password with `pullrequests:write` scope.
+2. **Create a Workflow File**:
+   - Create a file at `.github/workflows/falcon-linter.yml`:
 
-## Usage
+   ```yaml
+   name: Falcon Linter Review
 
-### General Options
+   on:
+     pull_request:
+       types: [opened, synchronize]
 
--   `--provider <provider>`: (Required) The Git provider (`github` or `bitbucket`).
--   `--pr-id <prId>`: (Required) The ID of the pull request to review.
--   `--model <model>`: (Optional) The Gemini model to use. Defaults to `gemini-2.0-flash`.
--   `--prompt <prompt>`: (Optional) A custom prompt for the AI.
--   `--style-guide <styleGuide>`: (Optional) A custom style guide for the AI to follow.
--   `--base-branch <baseBranch>`: (Optional) The base branch to compare against. Defaults to `main`.
--   `--ignore-files <files>`: (Optional) A comma-separated list of glob patterns to ignore (e.g., `*.json,**/*.yml`).
--   `--review-level <level>`: (Optional) The level of review to perform (`line` or `file`). Defaults to `file`.
+   jobs:
+     review:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+           with:
+             fetch-depth: 0  # Required for base branch diffing
 
-### Examples
+         - name: Install Node.js
+           uses: actions/setup-node@v4
 
-#### GitHub
+         - name: Install Falcon Linter
+           run: npm install -g falcon-linter
 
-```bash
-falcon-linter \
-  --provider github \
-  --pr-id 123 \
-  --owner your-github-username \
-  --repo your-repo-name
-```
+         - name: Run Falcon Linter
+           env:
+             GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
+             GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+           run: |
+             falcon-linter \
+               --provider github \
+               --pr-id ${{ github.event.pull_request.number }} \
+               --owner ${{ github.repository_owner }} \
+               --repo ${{ github.event.repository.name }}
+   ```
 
-#### Bitbucket
+### Bitbucket (Bitbucket Pipelines)
 
-```bash
-falcon-linter \
-  --provider bitbucket \
-  --pr-id 456 \
-  --workspace your-bitbucket-workspace \
-  --repo-slug your-repo-slug
-```
+1. **Add Repository Variables**:
+   - Navigate to **Repository settings** > **Pipelines** > **Repository variables**.
+   - Add the following secured variables:
+     - `BITBUCKET_USERNAME`: Your Bitbucket username.
+     - `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
+     - `GEMINI_API_KEY`: Your Google Gemini API key.
 
-## Customizing the Review
+2. **Create a `bitbucket-pipelines.yml` File**:
+   - Add or update `bitbucket-pipelines.yml` in your repository root:
 
-You can customize the AI's review by providing a custom prompt and a style guide. This allows you to tailor the feedback to your project's specific needs and coding standards.
+   ```yaml
+   image: node:22
 
-### Advanced Examples
+   pipelines:
+     pull-requests:
+       '*':
+         - step:
+             name: Run Falcon Linter Review
+             script:
+               # Fetch full git history for diffing
+               - git fetch --unshallow || git fetch --all
+               # Run linter with npx
+               - npx falcon-linter \
+                   --provider bitbucket \
+                   --pr-id $BITBUCKET_PULL_REQUEST_ID \
+                   --workspace $BITBUCKET_WORKSPACE \
+                   --repo-slug $BITBUCKET_REPO_SLUG
+   ```
 
-#### Custom Prompt
+---
 
-You can provide a custom prompt to guide the AI's review. This is useful when you want to focus on specific aspects of the code.
+## 🛠️ Advanced Configuration
 
-```bash
-falcon-linter \
-  --provider github \
-  --pr-id 123 \
-  --owner your-github-username \
-  --repo your-repo-name \
-  --prompt "As a senior engineer, please review this PR for code style, performance, and security."
-```
+Customize Falcon Linter by adding options to the `falcon-linter` command in your CI/CD workflow.
 
-#### Multi-line Prompt from a File
+### `--model <model>`
+Specifies the Gemini model for reviews.
+- **Default**: `gemini-2.0-flash`
+- **Example**: `--model gemini-2.5-pro`
 
-For more complex prompts, you can pass in a multi-line prompt from a text file.
+### `--prompt <prompt>`
+Guides the AI's review focus with a custom prompt.
+- **Default**: "Review this PR for best practices."
+- **Example**: `--prompt "Focus on security vulnerabilities and performance optimizations."`
 
-**`my-prompt.txt`:**
+### `--style-guide <styleGuide>`
+Sets a style guide for the AI to follow.
+- **Default**: "Google TypeScript Style Guide"
+- **Example**: `--style-guide "Airbnb JavaScript Style Guide"`
 
-```
-You are a senior engineer with a focus on clean code and best practices.
-Please review the following pull request and provide feedback on:
-- Code clarity and readability
-- Adherence to the SOLID principles
-- Potential performance bottlenecks
-- Any security vulnerabilities
-```
+### `--ignore-files <files>`
+Comma-separated glob patterns to exclude files from review.
+- **Example**: `--ignore-files "**/__tests__/**,**/*.spec.ts,**/docs/**"`
 
-**Command:**
+### `--review-level <level>`
+Chooses the review granularity.
+- **Options**: `line` (specific line comments) or `file` (file-level summaries)
+- **Default**: `file`
+- **Example**: `--review-level line`
 
-```bash
-falcon-linter \
-  --provider github \
-  --pr-id 123 \
-  --owner your-github-username \
-  --repo your-repo-name \
-  --prompt "$(cat my-prompt.txt)"
-```
-
-#### Using a Style Guide
-
-You can also provide a style guide for the AI to follow. This ensures that the review is consistent with your project's coding standards.
-
-```bash
-falcon-linter \
-  --provider github \
-  --pr-id 123 \
-  --owner your-github-username \
-  --repo your-repo-name \
-  --style-guide "Follow the Google TypeScript Style Guide. Pay close attention to naming conventions and type definitions."
-```
-
-## CI/CD Pipeline Integration
-
-### GitHub Actions Example
-
-Create a file named `.github/workflows/ai-review.yml`:
-
+### Example: Advanced GitHub Actions Configuration
 ```yaml
-name: AI PR Review
-
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Run AI Review
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npx falcon-linter \
-            --provider github \
-            --pr-id ${{ github.event.pull_request.number }} \
-            --owner ${{ github.repository_owner }} \
-            --repo ${{ github.event.repository.name }} \
-            --base-branch ${{ github.event.pull_request.base.ref }}
+# ... (previous steps)
+- name: Run Falcon Linter with Advanced Config
+  env:
+    GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  run: |
+    falcon-linter \
+      --provider github \
+      --pr-id ${{ github.event.pull_request.number }} \
+      --owner ${{ github.repository_owner }} \
+      --repo ${{ github.event.repository.name }} \
+      --model gemini-1.5-pro-latest \
+      --prompt "Check for logical errors and suggest improvements." \
+      --ignore-files "**/migrations/**,**/*.md" \
+      --review-level line
 ```
 
-### Bitbucket Pipelines Example
+---
 
-Add the following to your `bitbucket-pipelines.yml` file. Make sure to configure `GEMINI_API_KEY` and `BITBUCKET_TOKEN` as repository variables in your Bitbucket settings.
-
-```yaml
-pipelines:
-  pull-requests:
-    '**':
-      - step:
-          name: AI Code Review
-          image: node:22
-          script:
-            - npm i -g falcon-linter
-            - >
-              falcon-linter \
-              --provider bitbucket \
-              --pr-id $BITBUCKET_PULL_REQUEST_ID \
-              --workspace $BITBUCKET_WORKSPACE \
-              --repo-slug $BITBUCKET_REPO_SLUG \
-              --bitbucket-username $BITBUCKET_USERNAME \
-              --bitbucket-app-password $BITBUCKET_APP_PASSWORD \
-              --base-branch $BITBUCKET_PR_DESTINATION_BRANCH
-```
-
-## Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## Author
+## 👨‍💻 Author
 
 **Devi Prakash Kandikonda**
 
--   GitHub: [@dprakash2101](https://github.com/dprakash2101)
+- **GitHub**: [dprakash2101](https://github.com/dprakash2101)
+- **Email**: deviprakash9321@gmail.com
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+*Built with 💻 and ☕ by Devi Prakash Kandikonda*

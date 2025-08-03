@@ -39,7 +39,8 @@
     "commander": "^14.0.0",
     "dotenv": "^17.2.1",
     "glob": "^11.0.3",
-    "micromatch": "^4.0.8"
+    "micromatch": "^4.0.8",
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@types/micromatch": "^4.0.9",
