@@ -104,7 +104,7 @@ Falcon Linter is designed for seamless integration into CI/CD workflows.
    - Navigate to **Repository settings** > **Pipelines** > **Repository variables**.
    - Add the following secured variables:
      - `BITBUCKET_USERNAME`: Your Bitbucket username.
-     - `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
+     - `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) with `pullrequests:write` permissions.
      - `GEMINI_API_KEY`: Your Google Gemini API key.
 
 2. **Create a `bitbucket-pipelines.yml` File**:
