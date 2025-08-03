@@ -1,6 +1,6 @@
 {
   "name": "falcon-linter",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.",
   "main": "dist/index.js",
   "bin": {
