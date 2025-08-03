@@ -105,7 +105,7 @@ ${this.escapeCode(this.styleGuide)}
     const filesSection: Part = {
       inlineData: {
         mimeType: 'application/json',
-        data: JSON.stringify({ files_to_review: fileObjects })
+        data: Buffer.from(JSON.stringify({ files_to_review: fileObjects })).toString('base64')
       }
     };
 
