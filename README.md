@@ -1,229 +1,198 @@
 # Falcon Linter
 
-## About The Project
+**Falcon Linter** is a powerful command-line interface (CLI) tool that harnesses Google's Gemini AI to provide automated, senior-engineer-level code reviews for your pull requests (PRs). It delivers structured, line-by-line feedback in Markdown format, posted directly as comments on your PRs, fostering a mentorship-like experience for your team.
 
-**Falcon Linter** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
+The goal is to empower developers, especially junior engineers, with clear, actionable, and educational suggestions to elevate code quality.
 
-The goal is to provide helpful, educational, and constructive feedback to help junior engineers improve their code by providing clear, actionable suggestions.
+---
 
-## Key Features
+## ✨ Key Features
 
--   **🤖 Falcon PR Reviewer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
--   **📝 Actionable Feedback with Code Diff:** All review comments now include the `currentCode` and `suggestedCode` in a diff format, making feedback precise and easy to apply.
--   **🧠 Enhanced Contextual Understanding:** Provides Gemini with full file content (old and new) and detailed diffs for superior review quality and relevance.
--   **🎯 Granular Review Levels:** Choose between `line`-level (precise, diff-based) or `file`-level (high-level summary) reviews to suit your needs.
--   **💅 Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
--   **🔄 Multi-Provider Support:** Works with both GitHub and Bitbucket.
--   **⚙️ Configurable:** Use custom prompts and style guides to tailor the review to your project's needs.
--   **🚀 CI/CD Friendly:** Designed to be easily integrated into your existing CI/CD pipelines.
+- **🤖 Senior Engineer Persona**: Intelligent code reviews powered by Gemini AI, mimicking a senior engineer's perspective.
+- **📝 Actionable Feedback with Diffs**: Comments include `currentCode` and `suggestedCode` in a diff format for precise, easy-to-apply suggestions.
+- **🧠 Deep Contextual Analysis**: Provides Gemini with full file content (old and new) and detailed diffs for highly relevant reviews.
+- **🎯 Flexible Review Levels**: Choose `line`-level (granular, diff-based) or `file`-level (high-level summary) reviews.
+- **💅 Polished Markdown Output**: Feedback is formatted in clean, readable Markdown with diff-style code blocks.
+- **🔄 Multi-Platform Support**: Compatible with GitHub and Bitbucket.
+- **⚙️ Highly Configurable**: Customize reviews with tailored prompts and style guides.
+- **🚀 CI/CD Integration**: Seamlessly integrates into your CI/CD pipelines for automated workflows.
 
-## Getting Started
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Before you begin, ensure you have the following:
+Ensure you have the following before starting:
 
--   Node.js (v22 or later)
--   A GitHub or Bitbucket account.
--   A Google Gemini API Key.
+- **Node.js**: Version 22 or later
+- **GitHub or Bitbucket Account**: For PR integration
+- **Google Gemini API Key**: Required for AI-powered reviews
 
-### Getting Your Free Gemini API Key
+### Obtaining a Free Gemini API Key
 
-You can get a free Gemini API key from Google AI Studio.
-
-1.  Go to [Google AI Studio](https://aistudio.google.com/).
-2.  Sign in with your Google account.
-3.  Click on **"Get API key"** in the top left corner.
-4.  Click **"Create API key"**.
-5.  Copy your newly generated API key.
+1. Visit [Google AI Studio](https://aistudio.google.com/).
+2. Sign in with your Google account.
+3. Navigate to **"Get API key"** in the top left corner.
+4. Click **"Create API key"**.
+5. Copy the generated API key for use.
 
 ### Installation
 
-You can install the tool globally from npm:
+Install Falcon Linter globally via npm:
 
 ```bash
 npm install -g falcon-linter
 ```
 
-Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
+Alternatively, use `npx` for direct integration in CI/CD pipelines without global installation.
 
-## 🚀 CI/CD Integration
+---
 
-The recommended way to use Falcon Linter is in a CI/CD environment.
+## 🔧 CI/CD Integration
 
-### For GitHub (GitHub Actions)
+Falcon Linter is designed for seamless integration into CI/CD workflows.
 
-1.  **Add Secrets to your Repository**:
-    *   Go to your repository's **Settings** > **Secrets and variables** > **Actions**.
-    *   Click **New repository secret** and add the following:
-        *   `FALCON_LINTER_GITHUB_TOKEN`: A [GitHub Personal Access Token](https://github.com/settings/tokens) with the `repo` scope.
-        *   `GEMINI_API_KEY`: Your Google Gemini API key (see instructions above).
+### GitHub (GitHub Actions)
 
-2.  **Create a Workflow File**:
-    *   Create a new file in your repository at `.github/workflows/falcon-linter.yml`:
+1. **Add Repository Secrets**:
+   - Go to **Settings** > **Secrets and variables** > **Actions** in your repository.
+   - Add the following secrets:
+     - `FALCON_LINTER_GITHUB_TOKEN`: A [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope.
+     - `GEMINI_API_KEY`: Your Google Gemini API key.
 
-    ```yaml
-    name: Falcon Linter Review
+2. **Create a Workflow File**:
+   - Create a file at `.github/workflows/falcon-linter.yml`:
 
-    on:
-      pull_request:
-        types: [opened, synchronize]
+   ```yaml
+   name: Falcon Linter Review
 
-    jobs:
-      review:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout code
-            uses: actions/checkout@v4
-            with:
-              # Required to get the base branch for diffing
-              fetch-depth: 0
+   on:
+     pull_request:
+       types: [opened, synchronize]
 
-          - name: Install Node.js
-            uses: actions/setup-node@v4
+   jobs:
+     review:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+           with:
+             fetch-depth: 0  # Required for base branch diffing
 
-          - name: Install Falcon Linter
-            run: npm install -g falcon-linter
+         - name: Install Node.js
+           uses: actions/setup-node@v4
 
-          - name: Run Falcon Linter
-            env:
-              GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
-              GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-            run: |
-              falcon-linter \
-                --provider github \
-                --pr-id ${{ github.event.pull_request.number }} \
-                --owner ${{ github.repository_owner }} \
-                --repo ${{ github.event.repository.name }}
-    ```
+         - name: Install Falcon Linter
+           run: npm install -g falcon-linter
 
-### For Bitbucket (Bitbucket Pipelines)
+         - name: Run Falcon Linter
+           env:
+             GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
+             GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+           run: |
+             falcon-linter \
+               --provider github \
+               --pr-id ${{ github.event.pull_request.number }} \
+               --owner ${{ github.repository_owner }} \
+               --repo ${{ github.event.repository.name }}
+   ```
 
-1.  **Add Repository Variables**:
-    *   Go to your repository's **Repository settings** > **Pipelines** > **Repository variables**.
-    *   Add the following variables, making sure to check the **Secured** box for each:
-        *   `BITBUCKET_USERNAME`: Your Bitbucket username.
-        *   `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
-        *   `GEMINI_API_KEY`: Your Google Gemini API key.
+### Bitbucket (Bitbucket Pipelines)
 
-2.  **Create a `bitbucket-pipelines.yml` File**:
-    *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository with the following content. This example is a minimal, copy-paste ready template.
+1. **Add Repository Variables**:
+   - Navigate to **Repository settings** > **Pipelines** > **Repository variables**.
+   - Add the following secured variables:
+     - `BITBUCKET_USERNAME`: Your Bitbucket username.
+     - `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
+     - `GEMINI_API_KEY`: Your Google Gemini API key.
 
-    ```yaml
-image: node:22
+2. **Create a `bitbucket-pipelines.yml` File**:
+   - Add or update `bitbucket-pipelines.yml` in your repository root:
 
-pipelines:
-  pull-requests:
-    '*':
-      - step:
-          name: Run Falcon Linter Review
-          script:
-            # Fetch the full git history to allow diffing against the target branch
-            - git fetch --unshallow || git fetch --all
-            # Run the linter using npx, which handles the package download and execution
-            - npx falcon-linter \
-                --provider bitbucket \
-                --pr-id $BITBUCKET_PULL_REQUEST_ID \
-                --workspace $BITBUCKET_WORKSPACE \
-                --repo-slug $BITBUCKET_REPO_SLUG
-```
+   ```yaml
+   image: node:22
+
+   pipelines:
+     pull-requests:
+       '*':
+         - step:
+             name: Run Falcon Linter Review
+             script:
+               # Fetch full git history for diffing
+               - git fetch --unshallow || git fetch --all
+               # Run linter with npx
+               - npx falcon-linter \
+                   --provider bitbucket \
+                   --pr-id $BITBUCKET_PULL_REQUEST_ID \
+                   --workspace $BITBUCKET_WORKSPACE \
+                   --repo-slug $BITBUCKET_REPO_SLUG
+   ```
 
 ---
 
 ## 🛠️ Advanced Configuration
 
-You can customize the linter's behavior by adding the following options to the `falcon-linter` command in your CI/CD workflow file.
+Customize Falcon Linter by adding options to the `falcon-linter` command in your CI/CD workflow.
 
 ### `--model <model>`
-Specifies the Gemini model to use for the review.
--   **Default**: `gemini-2.0-flash`
--   **Example**: `--model gemini-1.5-pro-latest`
+Specifies the Gemini model for reviews.
+- **Default**: `gemini-2.5-pro`
+- **Example**: `--model gemini-1.5-pro-latest`
 
 ### `--prompt <prompt>`
-Provides a custom prompt to guide the AI's review process.
--   **Default**: "Review this PR for best practices."
--   **Example**: `--prompt "Focus on security vulnerabilities and performance issues."`
+Guides the AI's review focus with a custom prompt.
+- **Default**: "Review this PR for best practices."
+- **Example**: `--prompt "Focus on security vulnerabilities and performance optimizations."`
 
 ### `--style-guide <styleGuide>`
-Specifies a style guide for the AI to follow.
--   **Default**: "Google TypeScript Style Guide"
--   **Example**: `--style-guide "Airbnb JavaScript Style Guide"`
+Sets a style guide for the AI to follow.
+- **Default**: "Google TypeScript Style Guide"
+- **Example**: `--style-guide "Airbnb JavaScript Style Guide"`
 
 ### `--ignore-files <files>`
-A comma-separated list of glob patterns to ignore files from the review.
--   **Example**: `--ignore-files "**/__tests__/**,**/*.spec.ts,**/docs/**"`
+Comma-separated glob patterns to exclude files from review.
+- **Example**: `--ignore-files "**/__tests__/**,**/*.spec.ts,**/docs/**"`
 
 ### `--review-level <level>`
-The level of review to perform.
--   **Options**: `line` or `file`
--   **Default**: `file`
--   **`line`**: Comments will be attached to specific lines of code.
--   **`file`**: Comments will be made at the file level.
--   **Example**: `--review-level line`
+Chooses the review granularity.
+- **Options**: `line` (specific line comments) or `file` (file-level summaries)
+- **Default**: `file`
+- **Example**: `--review-level line`
 
-### Example with Advanced Configuration (GitHub Actions)
+### Example: Advanced GitHub Actions Configuration
 ```yaml
 # ... (previous steps)
-          - name: Run Falcon Linter with Advanced Config
-            env:
-              GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
-              GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-            run: |
-              falcon-linter \
-                --provider github \
-                --pr-id ${{ github.event.pull_request.number }} \
-                --owner ${{ github.repository_owner }} \
-                --repo ${{ github.event.repository.name }} \
-                --model gemini-1.5-pro-latest \
-                --prompt "Please check for logical errors and suggest improvements." \
-                --ignore-files "**/migrations/**,**/*.md" \
-                --review-level line
+- name: Run Falcon Linter with Advanced Config
+  env:
+    GITHUB_TOKEN: ${{ secrets.FALCON_LINTER_GITHUB_TOKEN }}
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  run: |
+    falcon-linter \
+      --provider github \
+      --pr-id ${{ github.event.pull_request.number }} \
+      --owner ${{ github.repository_owner }} \
+      --repo ${{ github.event.repository.name }} \
+      --model gemini-1.5-pro-latest \
+      --prompt "Check for logical errors and suggest improvements." \
+      --ignore-files "**/migrations/**,**/*.md" \
+      --review-level line
 ```
 
 ---
-
-## 💻 Local Testing
-
-For debugging or testing purposes, you can run the linter locally.
-
-1.  **Install**: `npm install -g falcon-linter`
-2.  **Set Environment Variables**:
-    -   For GitHub:
-        ```bash
-        export GITHUB_TOKEN="your-github-personal-access-token"
-        export GEMINI_API_KEY="your-gemini-api-key"
-        ```
-    -   For Bitbucket:
-        ```bash
-        export BITBUCKET_USERNAME="your-bitbucket-username"
-        export BITBUCKET_APP_PASSWORD="your-bitbucket-app-password"
-        export GEMINI_API_KEY="your-gemini-api-key"
-        ```
-3.  **Run the Linter**:
-    -   For GitHub:
-        ```bash
-        falcon-linter \
-          --provider github \
-          --pr-id <your-pr-id> \
-          --owner <repository-owner> \
-          --repo <repository-name>
-        ```
-    -   For Bitbucket:
-        ```bash
-        falcon-linter \
-          --provider bitbucket \
-          --pr-id <your-pr-id> \
-          --workspace <your-workspace> \
-          --repo-slug <your-repo-slug>
-        ```
 
 ## 👨‍💻 Author
 
 **Devi Prakash Kandikonda**
 
--   **GitHub**: [dprakash2101](https://github.com/dprakash2101)
--   **Email**: deviprakash9321@gmail.com
+- **GitHub**: [dprakash2101](https://github.com/dprakash2101)
+- **Email**: deviprakash9321@gmail.com
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+*Built with 💻 and ☕ by Devi Prakash Kandikonda*
