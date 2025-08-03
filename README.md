@@ -1,12 +1,6 @@
 # Falcon Linter
 
-<p align="center">
-  <img src="https://i.imgur.com/s4qQJjC.png" alt="Falcon Linter" width="200"/>
-</p>
-
-<p align="center">
-  An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.
-</p>
+An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.
 
 ---
 
@@ -84,7 +78,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
 2.  **Create a `bitbucket-pipelines.yml` File**:
     *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository:
 
-    ```yaml
+    ```yml
     image: node:22
 
 pipelines:
