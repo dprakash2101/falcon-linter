@@ -137,8 +137,8 @@ Customize Falcon Linter by adding options to the `falcon-linter` command in your
 
 ### `--model <model>`
 Specifies the Gemini model for reviews.
-- **Default**: `gemini-2.5-pro`
-- **Example**: `--model gemini-1.5-pro-latest`
+- **Default**: `gemini-2.0-flash`
+- **Example**: `--model gemini-2.5-pro`
 
 ### `--prompt <prompt>`
 Guides the AI's review focus with a custom prompt.
