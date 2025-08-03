@@ -1,22 +1,53 @@
 # Falcon Linter
 
-An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.
+## About The Project
 
----
+**Falcon Linter** is a command-line interface (CLI) tool that leverages the power of Google's Gemini AI to automatically review your pull requests. It acts as a "Senior Engineer" to help mentor your team by providing structured, line-by-line feedback in Markdown format, and posts it as a comment directly on your PR.
 
-Falcon Linter uses Google's Gemini AI to analyze your pull requests and provide feedback on best practices, potential bugs, and style violations. It is designed to be integrated directly into your CI/CD pipeline to automate code reviews securely.
+The goal is to provide helpful, educational, and constructive feedback to help junior engineers improve their code by providing clear, actionable suggestions.
 
-## ✨ Features
+## Key Features
 
--   **AI-Powered Reviews**: Get intelligent feedback on your code.
--   **GitHub & Bitbucket Integration**: Works with both major Git providers.
--   **Secure**: Designed to be used with CI/CD secrets.
--   **Automatic Branch Detection**: Automatically diffs the correct branches in a PR context.
--   **Customizable**: Configure the model, prompt, and style guide to fit your needs.
+-   **🤖 Falcon PR Reviewer Persona:** Get intelligent code reviews from an AI that acts like a senior engineer.
+-   **📝 Actionable Feedback with Code Diff:** All review comments now include the `currentCode` and `suggestedCode` in a diff format, making feedback precise and easy to apply.
+-   **🧠 Enhanced Contextual Understanding:** Provides Gemini with full file content (old and new) and detailed diffs for superior review quality and relevance.
+-   **🎯 Granular Review Levels:** Choose between `line`-level (precise, diff-based) or `file`-level (high-level summary) reviews to suit your needs.
+-   **💅 Rich Markdown Comments:** The review is formatted into a clean, readable Markdown comment with diff-style code blocks.
+-   **🔄 Multi-Provider Support:** Works with both GitHub and Bitbucket.
+-   **⚙️ Configurable:** Use custom prompts and style guides to tailor the review to your project's needs.
+-   **🚀 CI/CD Friendly:** Designed to be easily integrated into your existing CI/CD pipelines.
 
----
+## Getting Started
 
-## 🚀 Getting Started: CI/CD Integration
+### Prerequisites
+
+Before you begin, ensure you have the following:
+
+-   Node.js (v22 or later)
+-   A GitHub or Bitbucket account.
+-   A Google Gemini API Key.
+
+### Getting Your Free Gemini API Key
+
+You can get a free Gemini API key from Google AI Studio.
+
+1.  Go to [Google AI Studio](https://aistudio.google.com/).
+2.  Sign in with your Google account.
+3.  Click on **"Get API key"** in the top left corner.
+4.  Click **"Create API key"**.
+5.  Copy your newly generated API key.
+
+### Installation
+
+You can install the tool globally from npm:
+
+```bash
+npm install -g falcon-linter
+```
+
+Alternatively, you can use it directly with `npx` in your CI/CD pipeline.
+
+## 🚀 CI/CD Integration
 
 The recommended way to use Falcon Linter is in a CI/CD environment.
 
@@ -26,7 +57,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
     *   Go to your repository's **Settings** > **Secrets and variables** > **Actions**.
     *   Click **New repository secret** and add the following:
         *   `FALCON_LINTER_GITHUB_TOKEN`: A [GitHub Personal Access Token](https://github.com/settings/tokens) with the `repo` scope.
-        *   `GEMINI_API_KEY`: Your Google Gemini API key.
+        *   `GEMINI_API_KEY`: Your Google Gemini API key (see instructions above).
 
 2.  **Create a Workflow File**:
     *   Create a new file in your repository at `.github/workflows/falcon-linter.yml`:
@@ -73,7 +104,7 @@ The recommended way to use Falcon Linter is in a CI/CD environment.
     *   Add the following variables, making sure to check the **Secured** box for each:
         *   `BITBUCKET_USERNAME`: Your Bitbucket username.
         *   `BITBUCKET_APP_PASSWORD`: A [Bitbucket App Password](https://support.atlassian.com/bitbucket-cloud/docs/create-and-use-app-passwords/) with `pullrequests:write` permissions.
-        *   `GEMINI_API_KEY`: Your Google Gemini API key.
+        *   `GEMINI_API_KEY`: Your Google Gemini API key (see instructions above).
 
 2.  **Create a `bitbucket-pipelines.yml` File**:
     *   Create or update your `bitbucket-pipelines.yml` file in the root of your repository:
