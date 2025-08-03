@@ -4,7 +4,7 @@ import {
   ReviewComment,
   ReviewFile,
   StructuredReview,
-} from '../models/review';
+} from './models/review';
 import { basename } from 'path';
 
 export class PromptBuilder {
