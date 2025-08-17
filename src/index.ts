@@ -10,6 +10,7 @@ const program = new Command();
 // Attempt to get context from CI environment
 const ciContext = getCIContext();
 
+
 program
   .version('0.5.0')
   .description('An intelligent AI assistant to review and summarize your pull requests.')
