@@ -60,10 +60,13 @@ async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]
   log('Fetching full content for changed files...');
   const changedFiles: FileReviewContext[] = await Promise.all(
     filteredDiff.map(async (file) => {
-      let contentRef = sourceCommit; // Default to sourceCommit
       if (file.status === 'deleted') {
-        contentRef = baseBranch; // For deleted files, fetch from baseBranch
+        return {
+          ...file,
+          fullContent: '', // Skip fetching content for deleted files
+        };
       }
+      let contentRef = sourceCommit; // Default to sourceCommit
       return {
         ...file,
         fullContent: await provider.getFileContent(file.filePath, contentRef),
