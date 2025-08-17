@@ -79,4 +79,4 @@ jobs:
           echo "Running from source failed. Falling back to latest published version from GitHub."
           npm install -g github:dprakash2101/falcon-linter
           # The CLI is now in the path, and it knows how to get context from the environment
-          falcon-linter --command "${{ steps.command.outputs.command_text }}"
+          npx falcon-linter --command "${{ steps.command.outputs.command_text }}"
