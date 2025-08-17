@@ -1,7 +1,7 @@
 {
   "name": "falcon-linter",
   "homepage": "https://dprakash2101.github.io/falcon-linter/",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "An AI-powered 'Senior Engineer' that reviews pull requests and provides mentorship in the comments.",
   "main": "dist/index.js",
   "bin": {
@@ -50,4 +50,3 @@
     "typescript": "^5.8.3"
   }
 }
-
