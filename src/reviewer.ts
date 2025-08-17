@@ -1,19 +1,22 @@
-import { GoogleGenerativeAI, Schema, SchemaType } from '@google/generative-ai';
+import { getDetailedDiff, DetailedFileChange } from './git';
+import {
+  GoogleGenerativeAI,
+  SchemaType,
+  Schema,
+  Part,
+} from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { GitProvider } from './models/provider';
 import { PromptBuilder } from './prompt';
-import { StructuredReview } from './models/review';
+import {
+  StructuredReview,
+  ReviewFile,
+  ReviewComment,
+} from './models/review';
 import micromatch from 'micromatch';
-import { LinterMetadata } from './models/metadata';
-import { DetailedFileChange } from './models/diff';
 
 dotenv.config();
 
-export interface FileReviewContext extends DetailedFileChange {
-  fullContent: string;
-}
-
-// The schema for the structured review JSON output
 const reviewSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -34,10 +37,10 @@ const reviewSchema: Schema = {
                 currentCode: { type: SchemaType.STRING },
                 suggestedCode: { type: SchemaType.STRING, nullable: true },
                 reason: { type: SchemaType.STRING },
-                category: { type: SchemaType.STRING },
-                severity: { type: SchemaType.STRING },
+                category: { type: SchemaType.STRING }, // Enforced via prompt
+                severity: { type: SchemaType.STRING }, // Enforced via prompt
               },
-              required: ['currentCode', 'reason', 'category', 'severity'],
+              required: ['currentCode', 'suggestedCode', 'reason', 'category', 'severity'],
             },
           },
         },
@@ -46,61 +49,93 @@ const reviewSchema: Schema = {
     },
   },
   required: ['overallSummary', 'positiveFeedback', 'files'],
-};
+} as const;
 
-async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]): Promise<{ changedFiles: FileReviewContext[], relatedFiles: Map<string, string> }> {
-  console.log('Getting detailed diff...');
-  const diffContent = await provider.getPullRequestDiff();
-  const detailedDiff = getDetailedDiffFromContent(diffContent);
-  const { sourceCommit, baseBranch } = await provider.getPullRequestDetails(); // Get baseBranch here
+function formatReviewToMarkdown(review: StructuredReview): string {
+  const parts: string[] = ['# Falcon PR Reviewer'];
 
-  const filteredDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, ignoreFiles));
+  parts.push(`\n## Overall Summary\n${review.overallSummary}`);
 
-  console.log('Fetching full content for changed files...');
-  const changedFiles: FileReviewContext[] = await Promise.all(
-    filteredDiff.map(async (file) => {
-      let contentRef = sourceCommit; // Default to sourceCommit
-      if (file.status === 'deleted') {
-        contentRef = baseBranch; // For deleted files, fetch from baseBranch
-      }
-      return {
-        ...file,
-        fullContent: await provider.getFileContent(file.filePath, contentRef),
-      };
-    })
-  );
+  if (review.positiveFeedback.length > 0) {
+    parts.push(`\n## Positive Feedback\n`);
+    parts.push(...review.positiveFeedback.map(feedback => `- ${feedback}`));
+  }
 
-  // TODO: This part is currently a placeholder. The getRelatedFileContent method in the providers
-  // needs a real implementation (e.g., using an AST parser) for this to be effective.
-  console.log('Fetching content for related files (placeholder)... ');
-  const relatedFiles = new Map<string, string>();
-  // for (const file of changedFiles) {
-  //   const related = await provider.getRelatedFileContent(file.filePath);
-  //   related.forEach((content, path) => relatedFiles.set(path, content));
-  // }
+  const categoryCounts: Record<string, Record<string, number>> = {};
+  review.files.forEach(file => {
+    file.comments.forEach(comment => {
+      const category = comment.category;
+      const severity = comment.severity;
+      if (!categoryCounts[category]) categoryCounts[category] = {};
+      if (!categoryCounts[category][severity]) categoryCounts[category][severity] = 0;
+      categoryCounts[category][severity]++;
+    });
+  });
 
-  return { changedFiles, relatedFiles };
+  if (Object.keys(categoryCounts).length > 0) {
+    parts.push(`\n## Suggestion Summary\n`);
+    for (const category in categoryCounts) {
+      const severities = categoryCounts[category];
+      const severityStr = Object.entries(severities)
+        .map(([sev, count]) => `${count} ${sev}`)
+        .join(', ');
+      parts.push(`- **${category}**: ${severityStr}`);
+    }
+  }
+
+  review.files.forEach(file => {
+    if (file.comments.length === 0) return;
+    parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
+    file.comments.forEach(comment => {
+      parts.push(comment.line ? `### Line ${comment.line}` : '### File-Level Suggestion');
+      parts.push(`**Category:** ${comment.category} | **Severity:** ${comment.severity}\n`);
+      parts.push('**Reason:**');
+      parts.push(comment.reason);
+      parts.push('\n**Current Code:**\n```');      parts.push(comment.currentCode);      parts.push('```');      parts.push('\n**Suggested Code:**\n```');      parts.push(comment.suggestedCode);      parts.push('```');
+    });
+  });
+
+  return parts.join('\n');
 }
 
-export async function runReview(
+export async function review(
   provider: GitProvider,
-  userPrompt: string,
+  prompt: string,
+  styleGuide: string,
   modelName: string,
   ignoreFiles: string[],
-) {
-  console.log(`Starting review with model: ${modelName}`);
-  const { title, body, owner, repo, sourceCommit, sourceBranch } = await provider.getPullRequestDetails();
-  const metadata = await provider.getMetadata(sourceBranch);
-  const { changedFiles, relatedFiles } = await getFullReviewContext(provider, ignoreFiles);
+  reviewLevel: 'line' | 'file'
+): Promise<void> {
+  console.log(`Starting review with level: ${reviewLevel}`);
+  console.log('Fetching PR details...');
+  const { title: prTitle, body: prBody, baseBranch } = await provider.getPullRequestDetails();
 
-  if (changedFiles.length === 0) {
-    console.log('No changes found to review after filtering.');
+  if (!baseBranch) {
+    console.error('Failed to fetch base branch from PR details.');
     return;
   }
 
-  console.log('Building intelligent review prompt...');
-  const promptBuilder = new PromptBuilder(metadata, title, body, changedFiles, relatedFiles);
-  const finalPrompt = promptBuilder.buildReviewPrompt(userPrompt);
+  console.log(`Getting detailed diff from ${baseBranch}...`);
+  const detailedDiff = getDetailedDiff(baseBranch);
+
+  if (detailedDiff.length === 0) {
+    console.log('No changes found.');
+    return;
+  }
+
+  const filteredDetailedDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, ignoreFiles));
+
+  if (filteredDetailedDiff.length === 0) {
+    console.log('No changes found after filtering ignored files.');
+    return;
+  }
+
+  console.log('Detailed diff retrieved successfully.');
+
+  console.log('Building prompt...');
+  const promptBuilder = new PromptBuilder(prompt, styleGuide, filteredDetailedDiff, reviewLevel, prTitle, prBody);
+  const finalPrompt = promptBuilder.build();
+  console.log('Prompt built successfully.');
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({
@@ -111,126 +146,31 @@ export async function runReview(
     },
   });
 
-  console.log('Generating structured review... This may take a few moments.');
-  const result = await model.generateContent(finalPrompt);
-  const structuredReview = JSON.parse(result.response.text()) as StructuredReview;
-  
-  console.log('Formatting review to markdown...');
-  const markdownReview = formatReviewToMarkdown(structuredReview, owner, repo, sourceCommit);
-
-  if (!markdownReview.trim()) {
-    console.log('Generated review was empty.');
-    return;
-  }
-
-  await provider.postReview(markdownReview);
-}
-
-export async function runSummary(
-  provider: GitProvider,
-  userPrompt: string,
-  modelName: string,
-  updateBody: boolean
-) {
-  console.log(`Starting summary with model: ${modelName}`);
-  const { title, body, sourceBranch } = await provider.getPullRequestDetails();
-  const metadata = await provider.getMetadata(sourceBranch);
-  const { changedFiles } = await getFullReviewContext(provider, []);
-
-  if (changedFiles.length === 0) {
-    console.log('No changes found to summarize.');
-    return;
-  }
-
-  console.log('Building semantic summary prompt...');
-  const promptBuilder = new PromptBuilder(metadata, title, body, changedFiles, new Map());
-  const finalPrompt = promptBuilder.buildSummaryPrompt(userPrompt);
-
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-  const model = genAI.getGenerativeModel({ model: modelName });
-
-  console.log('Generating summary...');
-  const result = await model.generateContent(finalPrompt);
-  const summaryText = result.response.text();
-
-  if (!summaryText.trim()) {
-    console.log('Generated summary was empty.');
-    return;
-  }
-
-  if (updateBody) {
-    console.log('Updating PR body with summary...');
-    const newBody = body ? `${body}\n\n---\n**AI Summary:**\n${summaryText}` : `**AI Summary:**\n${summaryText}`;
-    await provider.updatePullRequestBody(newBody);
-  } else {
-    await provider.postReview(summaryText);
-  }
-}
-
-function formatReviewToMarkdown(review: StructuredReview, owner: string, repo: string, commitHash: string): string {
-  const parts: string[] = ['### Falcon AI Review\n'];
-  parts.push(`**Overall Summary:** ${review.overallSummary}`);
-  if(review.positiveFeedback && review.positiveFeedback.length > 0){
-    parts.push(`\n**Positive Feedback:**`);
-    review.positiveFeedback.forEach(feedback => { parts.push(`- ${feedback}`); });
-  }
-  parts.push('\n**Suggestions:**');
-  review.files.forEach(file => {
-    if (file.comments.length === 0) return;
-    parts.push(`\n---\n\n**File:** ${file.filePath}`);
-    file.comments.forEach(comment => {
-      const permalink = `https://github.com/${owner}/${repo}/blob/${commitHash}/${file.filePath}#L${comment.line}`;
-      parts.push(`\n*   **[Line ${comment.line}](${permalink})** [${comment.severity} - ${comment.category}]`);
-      parts.push(`    **Reason:** ${comment.reason}`);
-      if (comment.suggestedCode) {
-        parts.push('    **Suggestion:**\n    ```suggestion');
-        parts.push(comment.suggestedCode);
-        parts.push('    ```');
-      }
-    });
-  });
-  return parts.join('\n');
-}
-
-function getDetailedDiffFromContent(diffContent: string): DetailedFileChange[] {
-  const files = diffContent.split('diff --git ');
-  const detailedChanges: DetailedFileChange[] = [];
-
-  for (const file of files) {
-    if (!file.trim()) continue;
-
-    const lines = file.split('\n');
-    const filePathLine = lines[0];
-    const filePathMatch = filePathLine.match(/^a\/(.+) b\/(.+)$/);
-
-    let filePath = '';
-    let status: 'added' | 'modified' | 'deleted' | 'renamed' = 'modified'; // Default to modified
-
-    if (filePathMatch) {
-      const oldPath = filePathMatch[1];
-      const newPath = filePathMatch[2];
-
-      if (oldPath === '/dev/null') {
-        filePath = newPath;
-        status = 'added';
-      } else if (newPath === '/dev/null') {
-        filePath = oldPath;
-        status = 'deleted';
-      } else {
-        filePath = newPath;
-        // Check for rename
-        if (file.includes('rename from') && file.includes('rename to')) {
-          status = 'renamed';
-        }
-      }
-    } else {
-      // Handle cases where filePathMatch doesn't work, e.g., binary files or malformed diffs
-      // For now, we'll skip these or assign a default status if necessary.
-      continue;
+  console.log(`Generating review using ${modelName}...`);
+  try {
+    const result = await model.generateContent(finalPrompt);
+    const response = result.response;
+    console.log('Review generated successfully.');
+    
+    let structuredReview: StructuredReview;
+    try {
+      structuredReview = JSON.parse(response.text()) as StructuredReview;
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', parseError);
+      return;
+    }
+    
+    const markdownReview = formatReviewToMarkdown(structuredReview);
+    if (!markdownReview) {
+      console.log('No suggestions to post.');
+      return;
     }
 
-    detailedChanges.push({ filePath, fileDiff: file, status });
+    console.log('Posting review...');
+    await provider.postReview(markdownReview);
+    console.log('Review posted successfully.');
+  } catch (error) {
+    console.error('Error during review process:', error);
+    throw error;
   }
-
-  return detailedChanges;
 }
