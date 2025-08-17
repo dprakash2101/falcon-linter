@@ -23,7 +23,11 @@ export class PromptBuilder {
     private detailedDiff: DetailedFileChange[],
     private reviewLevel: 'line' | 'file',
     private prTitle: string,
-    private prBody: string
+    private prBody: string,
+    private commitHistory: string,
+    private labels: string[],
+    private relatedIssues: string[],
+    private author: string
   ) {
     if (!userPrompt?.trim()) {
       throw new Error('userPrompt cannot be empty or whitespace');
@@ -49,11 +53,33 @@ export class PromptBuilder {
    */
   private escapeCode(code: string): string {
     return (code || '')
-      .replace(/`/g, '\\`')
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/\t/g, '\\t');
+      .replace(/`/g, '\`')
+      .replace(/"/g, '\"')
+      .replace(/\n/g, '\n')
+      .replace(/\r/g, '\r')
+      .replace(/\t/g, '\t');
+  }
+
+  /**
+   * Calculates the number of added and deleted lines from the diff.
+   * @returns An object with the count of added and deleted lines.
+   */
+  private getChangeStats(): { added: number; deleted: number } {
+    let added = 0;
+    let deleted = 0;
+
+    for (const file of this.detailedDiff) {
+      const lines = (file.fileDiff || '').split('\n');
+      for (const line of lines) {
+        if (line.startsWith('+')) {
+          added++;
+        } else if (line.startsWith('-')) {
+          deleted++;
+        }
+      }
+    }
+
+    return { added, deleted };
   }
 
   /**
@@ -67,7 +93,7 @@ interface ReviewComment {
   currentCode: string;
   suggestedCode: string;
   reason: string;
-  category: 'SECURITY' | 'PERFORMANCE' | 'READABILITY' | 'BUG' | 'DESIGN' | 'REFACTOR' | 'STYLE';
+  category: 'CRITICAL' | 'IMPROVEMENT' | 'STYLE' | 'QUESTION' | 'PRAISE' | 'LEARNING';
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 }
 
@@ -87,9 +113,20 @@ interface StructuredReview {
       ? 'Provide line-level comments focusing on specific changed lines in the diff. Include the exact line number from newContent in the `line` field.'
       : 'Provide file-level comments focusing on the overall changes in each file. Do not include the `line` field in comments.';
 
+    const authorExperience = this.author.toLowerCase().includes('new') || this.author.toLowerCase().includes('junior') 
+      ? 'junior' 
+      : 'senior';
+
+    const personaCue = authorExperience === 'junior'
+      ? 'The author of this PR is a junior developer. Please provide more detailed explanations and be encouraging. Focus on providing learning opportunities.' 
+      : 'The author of this prism is a senior developer. You can be more direct and concise in your feedback. Focus on high-level architectural improvements.';
+
     const preamble = `
-You are a senior software engineer performing a code review.
-Provide **only** structured feedback in JSON following the given schema.
+You are a senior software engineer and an expert in the tech stack of this project. Your name is Falcon Linter, and you are a code reviewer with a keen eye for detail and a passion for helping developers write better code. You are friendly, constructive, and always provide clear and actionable feedback.
+
+${personaCue}
+
+You are reviewing a pull request. Provide **only** structured feedback in JSON following the given schema.
 Do **not** review or include unmodified code—focus exclusively on the changes in \`fileDiff\`.
 Use \`newContent\` only to understand the context of the changes and extract the current code for the \`currentCode\` field.
 
@@ -97,24 +134,40 @@ Use \`newContent\` only to understand the context of the changes and extract the
 ${reviewLevelInstruction}
 
 **Instructions:**
-1. Review the code changes in the provided \`fileDiff\` for each file.
-2. Use \`newContent\` to extract the current state of changed lines or files for the \`currentCode\` field.
-3. Focus **only** on the changes introduced in \`fileDiff\`. Ignore any unchanged code.
-4. For each comment, the \`currentCode\` field **must** reflect the code from the *new version* of the file in \`newContent\`.
-5. Provide suggestions for improvement based on the user's prompt and style guide.
-6. Ensure comments align with the specified review level (${this.reviewLevel}).
-7. Do not include markdown or extra fields in the JSON output.
+1.  Review the code changes in the provided \`fileDiff\` for each file.
+2.  Use \`newContent\` to extract the current state of changed lines or files for the \`currentCode\` field.
+3.  Focus **only** on the changes introduced in \`fileDiff\`. Ignore any unchanged code.
+4.  For each comment, the \`currentCode\` field **must** reflect the code from the *new version* of the file in \`newContent\`.
+5.  Provide suggestions for improvement based on the user's prompt and style guide.
+6.  Ensure comments align with the specified review level (${this.reviewLevel}).
+7.  Be encouraging and provide positive feedback for good practices in the \`positiveFeedback\` field.
+8.  Use the 'LEARNING' category to provide educational explanations about the code.
+9.  Do not include markdown or extra fields in the JSON output.
 
 Return JSON matching this schema exactly:
 ${schemaDefinition}
 `.trim();
 
+    const changeStats = this.getChangeStats();
     const prContext = `
 Pull Request Title:
 ${this.escapeCode(this.prTitle)}
 
 Pull Request Description:
 ${this.escapeCode(this.prBody)}
+
+Change Size:
+- Lines Added: ${changeStats.added}
+- Lines Deleted: ${changeStats.deleted}
+
+Commit History:
+${this.commitHistory}
+
+PR Labels:
+${this.labels.join(', ')}
+
+Related Issues:
+${this.relatedIssues.join(', ')}
 `.trim();
 
     const userContext = `
@@ -123,6 +176,12 @@ ${this.escapeCode(this.userPrompt)}
 
 Style Guide:
 ${this.escapeCode(this.styleGuide)}
+
+Team Standards:
+
+
+Ticket Context:
+
 `.trim();
 
     // Map DetailedFileChange into prompt objects, sorting by filePath for consistent output

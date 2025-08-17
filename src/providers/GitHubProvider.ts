@@ -31,17 +31,31 @@ export class GitHubProvider implements GitProvider {
     }
   }
 
-  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string }> {
+  private extractRelatedIssues(body: string): string[] {
+    const keywords = ['closes', 'fixes', 'resolves'];
+    const regex = new RegExp(`(?:${keywords.join('|')})\\s+#(\\d+)`, 'gi');
+    const issues: string[] = [];
+    let match;
+    while ((match = regex.exec(body)) !== null) {
+      issues.push(`#${match[1]}`);
+    }
+    return issues;
+  }
+
+  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
     try {
       const { data } = await this.octokit.pulls.get({
         owner: this.owner,
         repo: this.repo,
         pull_number: this.prId,
       });
-      return { title: data.title, body: data.body || '', baseBranch: data.base.ref };
+      const labels = data.labels.map(label => label.name);
+      const relatedIssues = this.extractRelatedIssues(data.body || '');
+      const author = data.user.login;
+      return { title: data.title, body: data.body || '', baseBranch: data.base.ref, labels, relatedIssues, author, owner: this.owner, repo: this.repo };
     } catch (error) {
       console.error(`Error fetching PR details for GitHub PR #${this.prId}:`, error);
-      return { title: '', body: '', baseBranch: '' };
+      return { title: '', body: '', baseBranch: '', labels: [], relatedIssues: [], author: '', owner: '', repo: '' };
     }
   }
 }

@@ -16,6 +16,7 @@ program
   .option('-s, --style-guide <styleGuide>', 'The style guide to use for the review', 'Google TypeScript Style Guide')
   .option('--ignore-files <files>', 'A comma-separated list of glob patterns to ignore', '')
   .option('--review-level <level>', 'The level of review to perform (line or file)', 'file')
+  .option('--output-blocks <blocks>', 'A comma-separated list of output blocks to include', 'actionableItems,overallSummary,positiveFeedback,suggestionSummary,fileDetails')
 
   // GitHub-specific options
   .option('--owner <owner>', 'The repository owner (for GitHub)')
@@ -46,13 +47,18 @@ program
         ? options.ignoreFiles.split(',').map((s: string) => s.trim()).filter(Boolean)
         : [];
 
+      const outputBlocks = options.outputBlocks
+        ? options.outputBlocks.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
       await review(
         provider,
         options.prompt,
         options.styleGuide,
         options.model,
         ignoreFiles,
-        options.reviewLevel
+        options.reviewLevel,
+        outputBlocks
       );
 
       console.log('✅ Review complete.');

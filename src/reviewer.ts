@@ -1,4 +1,4 @@
-import { getDetailedDiff, DetailedFileChange } from './git';
+import { getDetailedDiff, DetailedFileChange, getCommitHistory, getLatestCommitHash } from './git';
 import {
   GoogleGenerativeAI,
   SchemaType,
@@ -51,13 +51,40 @@ const reviewSchema: Schema = {
   required: ['overallSummary', 'positiveFeedback', 'files'],
 } as const;
 
-function formatReviewToMarkdown(review: StructuredReview): string {
+function formatReviewToMarkdown(review: StructuredReview, owner: string, repo: string, commitHash: string, outputBlocks: string[], detailedDiff: DetailedFileChange[]): string {
   const parts: string[] = ['# Falcon PR Reviewer'];
 
-  parts.push(`\n## Overall Summary\n${review.overallSummary}`);
+  const actionableItems = review.files.flatMap(file => 
+    file.comments
+      .filter(comment => comment.severity === 'CRITICAL' || comment.severity === 'HIGH')
+      .map(comment => ({
+        filePath: file.filePath,
+        line: comment.line,
+        reason: comment.reason,
+      }))
+  );
 
-  if (review.positiveFeedback.length > 0) {
-    parts.push(`\n## Positive Feedback\n`);
+  if (outputBlocks.includes('actionableItems') && actionableItems.length > 0) {
+    parts.push(`
+## Actionable Items
+
+| File | Line | Suggestion |
+| --- | --- | --- |`);
+    for (const item of actionableItems) {
+      parts.push(`| ${item.filePath} | ${item.line || 'N/A'} | ${item.reason} |`);
+    }
+  }
+
+  if (outputBlocks.includes('overallSummary')) {
+    parts.push(`
+## Overall Summary
+${review.overallSummary}`);
+  }
+
+  if (outputBlocks.includes('positiveFeedback') && review.positiveFeedback.length > 0) {
+    parts.push(`
+## Positive Feedback
+`);
     parts.push(...review.positiveFeedback.map(feedback => `- ${feedback}`));
   }
 
@@ -72,8 +99,10 @@ function formatReviewToMarkdown(review: StructuredReview): string {
     });
   });
 
-  if (Object.keys(categoryCounts).length > 0) {
-    parts.push(`\n## Suggestion Summary\n`);
+  if (outputBlocks.includes('suggestionSummary') && Object.keys(categoryCounts).length > 0) {
+    parts.push(`
+## Suggestion Summary
+`);
     for (const category in categoryCounts) {
       const severities = categoryCounts[category];
       const severityStr = Object.entries(severities)
@@ -83,17 +112,60 @@ function formatReviewToMarkdown(review: StructuredReview): string {
     }
   }
 
-  review.files.forEach(file => {
-    if (file.comments.length === 0) return;
-    parts.push(`\n---\n\n## \`${file.filePath}\`\n`);
-    file.comments.forEach(comment => {
-      parts.push(comment.line ? `### Line ${comment.line}` : '### File-Level Suggestion');
-      parts.push(`**Category:** ${comment.category} | **Severity:** ${comment.severity}\n`);
-      parts.push('**Reason:**');
-      parts.push(comment.reason);
-      parts.push('\n**Current Code:**\n```');      parts.push(comment.currentCode);      parts.push('```');      parts.push('\n**Suggested Code:**\n```');      parts.push(comment.suggestedCode);      parts.push('```');
+  if (outputBlocks.includes('fileDetails')) {
+    review.files.forEach(file => {
+      if (file.comments.length === 0) return;
+      parts.push(`
+---
+
+## eactivex
+`);
+      file.comments.forEach(comment => {
+        const permalink = `https://github.com/${owner}/${repo}/blob/${commitHash}/${file.filePath}#L${comment.line}`;
+        parts.push(comment.line ? `### [Line ${comment.line}](${permalink})` : '### File-Level Suggestion');
+        parts.push(`**Category:** ${comment.category} | **Severity:** ${comment.severity}\n`);
+        parts.push('**Reason:**');
+        parts.push(comment.reason);
+
+        const docLinks = {
+          'STYLE': 'https://google.github.io/styleguide/tsguide.html',
+          'SECURITY': 'https://github.com/OWASP/CheatSheetSeries/blob/master/Index.md'
+        };
+
+        if (docLinks[comment.category]) {
+          parts.push(`
+*Further reading: [${docLinks[comment.category]}](${docLinks[comment.category]})*`);
+        }
+
+        parts.push('\n**Current Code:**\n```');
+        parts.push(comment.currentCode);
+        parts.push('```');
+        parts.push('\n**Suggested Code:**\n```');
+        parts.push(comment.suggestedCode);
+        parts.push('```');
+      });
     });
-  });
+  }
+
+  if (outputBlocks.includes('qualityScore')) {
+    const totalComments = review.files.reduce((acc, file) => acc + file.comments.length, 0);
+    const criticalComments = review.files.reduce((acc, file) => acc + file.comments.filter(c => c.severity === 'CRITICAL').length, 0);
+    const highComments = review.files.reduce((acc, file) => acc + file.comments.filter(c => c.severity === 'HIGH').length, 0);
+    const changeStats = detailedDiff.reduce((acc, file) => {
+      const lines = (file.fileDiff || '').split('\n');
+      acc.added += lines.filter(line => line.startsWith('+')).length;
+      acc.deleted += lines.filter(line => line.startsWith('-')).length;
+      return acc;
+    }, { added: 0, deleted: 0 });
+    const totalChanges = changeStats.added + changeStats.deleted;
+
+    const score = totalComments > 0 ? (1 - (criticalComments + highComments) / totalComments) * 100 : 100;
+
+    parts.push(`
+## PR Quality Score: ${score.toFixed(2)}/100
+`);
+  }
+
 
   return parts.join('\n');
 }
@@ -104,11 +176,12 @@ export async function review(
   styleGuide: string,
   modelName: string,
   ignoreFiles: string[],
-  reviewLevel: 'line' | 'file'
+  reviewLevel: 'line' | 'file',
+  outputBlocks: string[]
 ): Promise<void> {
   console.log(`Starting review with level: ${reviewLevel}`);
   console.log('Fetching PR details...');
-  const { title: prTitle, body: prBody, baseBranch } = await provider.getPullRequestDetails();
+  const { title: prTitle, body: prBody, baseBranch, labels, relatedIssues, author, owner, repo } = await provider.getPullRequestDetails();
 
   if (!baseBranch) {
     console.error('Failed to fetch base branch from PR details.');
@@ -117,6 +190,7 @@ export async function review(
 
   console.log(`Getting detailed diff from ${baseBranch}...`);
   const detailedDiff = getDetailedDiff(baseBranch);
+  const commitHistory = getCommitHistory(baseBranch);
 
   if (detailedDiff.length === 0) {
     console.log('No changes found.');
@@ -133,7 +207,7 @@ export async function review(
   console.log('Detailed diff retrieved successfully.');
 
   console.log('Building prompt...');
-  const promptBuilder = new PromptBuilder(prompt, styleGuide, filteredDetailedDiff, reviewLevel, prTitle, prBody);
+  const promptBuilder = new PromptBuilder(prompt, styleGuide, filteredDetailedDiff, reviewLevel, prTitle, prBody, commitHistory, labels, relatedIssues, author);
   const finalPrompt = promptBuilder.build();
   console.log('Prompt built successfully.');
 
@@ -160,7 +234,8 @@ export async function review(
       return;
     }
     
-    const markdownReview = formatReviewToMarkdown(structuredReview);
+    const commitHash = getLatestCommitHash();
+    const markdownReview = formatReviewToMarkdown(structuredReview, owner, repo, commitHash, outputBlocks, filteredDetailedDiff);
     if (!markdownReview) {
       console.log('No suggestions to post.');
       return;

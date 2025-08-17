@@ -17,7 +17,7 @@ export function getDiff(baseBranch: string): string | null {
     console.log(`Running command: ${fetchCommand}`);
     execSync(fetchCommand);
 
-    const diffCommand = `git diff origin/${baseBranch}...HEAD`;
+    const diffCommand = `git diff --histogram origin/${baseBranch}...HEAD`;
     console.log(`Running command: ${diffCommand}`);
     const diff = execSync(diffCommand).toString().trim();
     
@@ -61,7 +61,7 @@ export function getDetailedDiff(baseBranch: string): DetailedFileChange[] {
       let changedLines: number[] = [];
 
       try {
-        fileDiff = execSync(`git diff origin/${baseBranch}...HEAD -- "${filePath}"`).toString().trim();
+        fileDiff = execSync(`git diff --histogram origin/${baseBranch}...HEAD -- "${filePath}"`).toString().trim();
         changedLines = extractChangedLines(fileDiff);
       } catch (diffError) {
         console.warn(`Could not get diff for ${filePath}: ${diffError}`);
@@ -109,4 +109,26 @@ function extractChangedLines(diff: string): number[] {
   }
 
   return changedLines;
+}
+
+export function getCommitHistory(baseBranch: string): string {
+  try {
+    const command = `git log --pretty=format:"- %s" origin/${baseBranch}...HEAD`;
+    console.log(`Running command: ${command}`);
+    return execSync(command).toString().trim();
+  } catch (error) {
+    console.error('Error getting commit history:', error);
+    return '';
+  }
+}
+
+export function getLatestCommitHash(): string {
+  try {
+    const command = 'git rev-parse HEAD';
+    console.log(`Running command: ${command}`);
+    return execSync(command).toString().trim();
+  } catch (error) {
+    console.error('Error getting latest commit hash:', error);
+    return '';
+  }
 }

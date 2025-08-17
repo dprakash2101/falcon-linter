@@ -40,6 +40,8 @@
     "dotenv": "^17.2.1",
     "glob": "^11.0.3",
     "micromatch": "^4.0.8",
+    "tree-sitter": "^0.21.3",
+    "tree-sitter-typescript": "^0.20.4",
     "zod": "^4.0.14"
   },
   "devDependencies": {
