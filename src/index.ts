@@ -57,7 +57,7 @@ program
       } else {
         log(`Command "${command}" not recognized. Skipping.`);
       }
-    } catch (error) {
+    } catch (error: any) {
       error('❌ Error during execution:', error);
       process.exit(1);
     }

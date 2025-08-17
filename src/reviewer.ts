@@ -49,21 +49,30 @@ const reviewSchema: Schema = {
   required: ['overallSummary', 'positiveFeedback', 'files'],
 };
 
-async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]): Promise<{ changedFiles: FileReviewContext[], relatedFiles: Map<string, string> }> {
+async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[], metadata: LinterMetadata): Promise<{ changedFiles: FileReviewContext[], relatedFiles: Map<string, string> }> {
   log('Getting detailed diff...');
   const diffContent = await provider.getPullRequestDiff();
   const detailedDiff = getDetailedDiffFromContent(diffContent);
   const { sourceCommit, baseBranch } = await provider.getPullRequestDetails(); // Get baseBranch here
 
-  const filteredDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, ignoreFiles));
+  let finalIgnoreFiles = [...ignoreFiles]; // Start with existing ignoreFiles
+  if (metadata.ignoredExtensions && metadata.ignoredExtensions.length > 0) {
+    const extensionGlobs = metadata.ignoredExtensions.map(ext => `**/*.${ext}`);
+    finalIgnoreFiles = [...finalIgnoreFiles, ...extensionGlobs];
+  }
+
+  const filteredDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, finalIgnoreFiles));
 
   log('Fetching full content for changed files...');
   const changedFiles: FileReviewContext[] = await Promise.all(
     filteredDiff.map(async (file) => {
-      let contentRef = sourceCommit; // Default to sourceCommit
       if (file.status === 'deleted') {
-        contentRef = baseBranch; // For deleted files, fetch from baseBranch
+        return {
+          ...file,
+          fullContent: '', // Skip fetching content for deleted files
+        };
       }
+      let contentRef = sourceCommit; // Default to sourceCommit
       return {
         ...file,
         fullContent: await provider.getFileContent(file.filePath, contentRef),
@@ -92,7 +101,7 @@ export async function runReview(
   log(`Starting review with model: ${modelName}`);
   const { title, body, owner, repo, sourceCommit, sourceBranch } = await provider.getPullRequestDetails();
   const metadata = await provider.getMetadata(sourceBranch);
-  const { changedFiles, relatedFiles } = await getFullReviewContext(provider, ignoreFiles);
+  const { changedFiles, relatedFiles } = await getFullReviewContext(provider, ignoreFiles, metadata);
 
   if (changedFiles.length === 0) {
     log('No changes found to review after filtering.');
@@ -136,7 +145,7 @@ export async function runSummary(
   log(`Starting summary with model: ${modelName}`);
   const { title, body, sourceBranch } = await provider.getPullRequestDetails();
   const metadata = await provider.getMetadata(sourceBranch);
-  const { changedFiles } = await getFullReviewContext(provider, []);
+  const { changedFiles } = await getFullReviewContext(provider, [], metadata);
 
   if (changedFiles.length === 0) {
     log('No changes found to summarize.');
