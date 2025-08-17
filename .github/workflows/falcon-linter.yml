@@ -30,6 +30,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "${{ secrets.User_Name }}"
+          git config --global user.email "${{ secrets.User_Email }}"
 
       - name: Determine Command
         id: command

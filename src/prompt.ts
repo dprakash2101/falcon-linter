@@ -56,7 +56,14 @@ export class PromptBuilder {
       Pull Request Title: ${this.prTitle}
       Pull Request Description:
       ${this.prBody}
-      List of changed files: ${this.files.map(f => f.filePath).join(', ')}
+      List of changed files: ${this.files.map(f => {
+        let statusIndicator = '';
+        if (f.status === 'added') statusIndicator = '(New)';
+        else if (f.status === 'modified') statusIndicator = '(Modified)';
+        else if (f.status === 'deleted') statusIndicator = '(Deleted)';
+        else if (f.status === 'renamed') statusIndicator = '(Renamed)';
+        return `${f.filePath} ${statusIndicator}`;
+      }).join(', ')}
     `;
 
     const userContext = `
@@ -66,29 +73,55 @@ export class PromptBuilder {
       Repository Instructions: ${customReviewPrompt || 'None'}
     `;
 
-    const filesToReview = this.files.map(f => {
-        let statusText = '';
-        if (f.status === 'added') {
-          statusText = '(New File)';
-        } else if (f.status === 'modified') {
-          statusText = '(Updated File)';
-        } else if (f.status === 'renamed') {
-          statusText = '(Renamed File)';
-        }
-        // For deleted files, we are not including their full content in the review prompt,
-        // but we can still mention them in the overall PR context if needed.
-        // However, for the detailed file review, we exclude them as per previous discussion.
+    let filesContext = '';
+    const newFiles = this.files.filter(f => f.status === 'added');
+    const modifiedFiles = this.files.filter(f => f.status === 'modified');
+    const renamedFiles = this.files.filter(f => f.status === 'renamed');
+    const deletedFiles = this.files.filter(f => f.status === 'deleted');
 
-        return `
-      File: ${f.filePath} ${statusText}
+    if (newFiles.length > 0) {
+      filesContext += '\n### New Files:\n';
+      filesContext += newFiles.map(f => `
+      File: ${f.filePath} (New File)
       Diff:
       ${f.fileDiff}
       Full Content:
       ${f.fullContent}
-    `;
-      }).join('
----
-');
+    `).join('\n---\n');
+    }
+
+    if (modifiedFiles.length > 0) {
+      filesContext += '\n### Modified Files:\n';
+      filesContext += modifiedFiles.map(f => `
+      File: ${f.filePath} (Updated File)
+      Diff:
+      ${f.fileDiff}
+      Full Content:
+      ${f.fullContent}
+    `).join('\n---\n');
+    }
+
+    if (renamedFiles.length > 0) {
+      filesContext += '\n### Renamed Files:\n';
+      filesContext += renamedFiles.map(f => `
+      File: ${f.filePath} (Renamed File)
+      Diff:
+      ${f.fileDiff}
+      Full Content:
+      ${f.fullContent}
+    `).join('\n---\n');
+    }
+
+    if (deletedFiles.length > 0) {
+      filesContext += '\n### Deleted Files:\n';
+      filesContext += deletedFiles.map(f => `
+      File: ${f.filePath} (Deleted File)
+      Diff:
+      ${f.fileDiff}
+      Content Before Deletion: 
+      ${f.fullContent}
+    `).join('\n---\n');
+    }
 
     let relatedFilesContext = 'For additional context, here is the content of potentially related files. Use this to check for breaking changes:\n';
     if (this.relatedFiles.size > 0) {
@@ -108,7 +141,7 @@ ${content}
       userContext,
       relatedFilesContext,
       'Please review the following files based on all the instructions and context provided:',
-      filesToReview,
+      filesContext,
     ].join('\n\n');
   }
 

@@ -28,7 +28,7 @@ export class BitbucketProvider implements GitProvider {
     return `https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/pullrequests/${this.prId}${endpoint}`;
   }
 
-  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; sourceCommit: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
+  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; sourceCommit: string; sourceBranch: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
     try {
       const response = await this.client.get(this.getApiUrl());
       const prData = response.data;
@@ -37,6 +37,7 @@ export class BitbucketProvider implements GitProvider {
         body: prData.description || '',
         baseBranch: prData.destination.branch.name,
         sourceCommit: prData.source.commit.hash,
+        sourceBranch: prData.source.branch.name,
         author: prData.author.display_name,
         labels: [], // Bitbucket API v2 does not support labels on PRs in a standard way
         relatedIssues: [], // Placeholder, logic to parse from body could be added
@@ -69,9 +70,9 @@ export class BitbucketProvider implements GitProvider {
     }
   }
 
-  async getMetadata(): Promise<LinterMetadata> {
+  async getMetadata(ref: string): Promise<LinterMetadata> {
     try {
-      const content = await this.getFileContent('falcon-linter-metadata.json', 'HEAD');
+      const content = await this.getFileContent('falcon-linter-metadata.json', ref);
       if (content) {
         return JSON.parse(content) as LinterMetadata;
       }
