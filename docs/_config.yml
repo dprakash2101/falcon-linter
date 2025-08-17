@@ -1,3 +1,5 @@
-theme: jekyll-theme-minimal
+remote_theme: just-the-docs/just-the-docs
+plugins:
+  - jekyll-remote-theme
 title: Falcon Linter
 description: Your AI-Powered Senior Engineer for Code Reviews

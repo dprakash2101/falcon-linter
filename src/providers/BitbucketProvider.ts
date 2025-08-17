@@ -105,14 +105,14 @@ export class BitbucketProvider implements GitProvider {
     }
   }
 
-  private handleError(error: any, message: string, doThrow: boolean = true) {
-    if (axios.isAxiosError(error)) {
-      error(`${message}: ${error.message}`);
-      if (error.response) {
-        error('API Error Response:', error.response.data);
+  private handleError(err: any, message: string, doThrow: boolean = true) {
+    if (axios.isAxiosError(err)) {
+      error(`${message}: ${err.message}`);
+      if (err.response) {
+        error('API Error Response:', err.response.data);
       }
     } else {
-      error('Unexpected error:', error);
+      error('Unexpected error:', err);
     }
     if (doThrow) {
       throw new Error(message);

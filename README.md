@@ -1,63 +1,46 @@
-# Falcon Linter
-<p align="center">
-  <b>An intelligent CLI assistant that provides expert-level code reviews and semantic summaries for your pull requests.</b>
-</p>
+Falcon Linter
+Falcon Linter is a powerful command-line interface (CLI) tool that harnesses Google's Gemini AI to provide automated, senior-engineer-level code reviews for your pull requests (PRs). It delivers structured, line-by-line feedback in Markdown format, posted directly as comments on your PRs, fostering a mentorship-like experience for your team.
 
----
+The goal is to empower developers, especially junior engineers, with clear, actionable, and educational suggestions to elevate code quality.
 
-Falcon Linter brings the power of Google's Gemini AI directly into your development workflow. It acts as a tireless senior engineer, analyzing your code changes to provide insightful feedback, enforce best practices, and help your team build higher-quality software, faster.
+✨ Key Features
+🤖 Senior Engineer Persona: Intelligent code reviews powered by Gemini AI, mimicking a senior engineer's perspective.
+📝 Actionable Feedback with Diffs: Comments include currentCode and suggestedCode in a diff format for precise, easy-to-apply suggestions.
+🧠 Deep Contextual Analysis: Provides Gemini with full file content (old and new) and detailed diffs for highly relevant reviews.
+🎯 Flexible Review Levels: Choose line-level (granular, diff-based) or file-level (high-level summary) reviews.
+💅 Polished Markdown Output: Feedback is formatted in clean, readable Markdown with diff-style code blocks.
+🔄 Multi-Platform Support: Compatible with GitHub and Bitbucket.
+⚙️ Highly Configurable: Customize reviews with tailored prompts and style guides.
+🚀 CI/CD Integration: Seamlessly integrates into your CI/CD pipelines for automated workflows.
+🚀 Getting Started
+Prerequisites
+Ensure you have the following before starting:
 
-## Key Features
+Node.js: Version 22 or later
+GitHub or Bitbucket Account: For PR integration
+Google Gemini API Key: Required for AI-powered reviews
+Obtaining a Free Gemini API Key
+Visit Google AI Studio.
+Sign in with your Google account.
+Navigate to "Get API key" in the top left corner.
+Click "Create API key".
+Copy the generated API key for use.
+Installation
+Install Falcon Linter globally via npm:
 
--   **🤖 Expert-Level Code Reviews:** Get detailed feedback on architecture, security, performance, and best practices.
--   **✨ Semantic Summaries:** Automatically generate summaries that describe the *impact* and *intent* of changes, not just the files touched.
--   **⚙️ Highly Customizable:** Use a `falcon-linter-metadata.json` file to teach the AI about your project and provide custom review instructions.
--   **🔄 Multi-Platform Support:** Integrates seamlessly with both **GitHub** and **Bitbucket**.
--   **✍️ Update PR Descriptions:** Automatically populate your pull request descriptions with AI-generated summaries.
--   **CI/CD Native:** Designed to be a natural part of your automated workflows.
+npm install -g falcon-linter
+Alternatively, use npx for direct integration in CI/CD pipelines without global installation.
 
-## Getting Started
+🔧 CI/CD Integration
+Falcon Linter is designed for seamless integration into CI/CD workflows.
 
-Getting started with Falcon Linter is simple.
+GitHub (GitHub Actions)
+Add Repository Secrets:
 
-1.  **Configure your repository:** Add a workflow file and the necessary API key secrets to your repository.
-2.  **(Optional) Add a metadata file:** Create a `falcon-linter-metadata.json` file in your repository's root to customize the AI's behavior.
+Go to Settings > Secrets and variables > Actions in your repository.
+Add the following secrets:
+FALCON_LINTER_GITHUB_TOKEN: A GitHub Personal Access Token with repo scope.
+GEMINI_API_KEY: Your Google Gemini API key.
+Create a Workflow File:
 
-For a complete walkthrough, please see the **[➡️ Getting Started Guide](./docs/getting-started.md)**.
-
-## Usage
-
-Once installed and configured in your repository, Falcon Linter runs automatically on pull requests. You can also trigger it manually with a simple PR comment:
-
--   **To request a review:**
-    ```
-    /falcon-linter --reviewChanges
-    ```
--   **To request a summary:**
-    ```
-    /falcon-linter --generateSummary
-    ```
--   **To request a summary and update the PR body:**
-    ```
-    /falcon-linter --generateSummary --update-body
-    ```
-
-## Full Documentation
-
-For a deep dive into all features, commands, and configuration options, please explore our **[Full Documentation](./docs/index.md)**.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## Author
-
-**Devi Prakash Kandikonda**
-
-- **GitHub**: [dprakash2101](https://github.com/dprakash2101)
+Create a file at .github/workflows/falcon-linter.yml: this is previopus earlier readme was like this I want to be like this Improve htm,l documentation to look good. Also this is npm package link https://www.npmjs.com/package/falcon-linter

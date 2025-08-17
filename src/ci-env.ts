@@ -41,7 +41,7 @@ export function getCIContext(): CIContext | null {
         prNumber: parseInt(prNumber, 10),
         command: command,
       };
-    } catch (error) {
+    } catch (error: any) {
       error('Failed to parse GITHUB_EVENT_PATH JSON:', error);
       return null;
     }
@@ -63,7 +63,7 @@ export function getCIContext(): CIContext | null {
         // In Bitbucket, the command is passed via a custom variable
         command: process.env.FALCON_COMMAND || 'review',
       };
-    } catch (error) {
+    } catch (error: any) {
       error('Failed to parse Bitbucket environment variables:', error);
       return null;
     }
