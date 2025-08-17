@@ -1,6 +1,8 @@
-export interface DetailedFileChange {
+export interface DiffFile {
   filePath: string;
-  previousFilePath?: string; // For renames
-  fileDiff: string;
-  status: 'added' | 'modified' | 'deleted' | 'renamed';
+  previousFilePath?: string;
+  fileContent?: string;
+  isNewFile?: boolean;
+  isDeletedFile?: boolean;
+  diff?: string;
 }
