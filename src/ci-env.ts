@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { log, error } from './logger';
 
 export interface CIContext {
   provider: string;
@@ -41,7 +42,7 @@ export function getCIContext(): CIContext | null {
         command: command,
       };
     } catch (error) {
-      console.error('Failed to parse GITHUB_EVENT_PATH JSON:', error);
+      error('Failed to parse GITHUB_EVENT_PATH JSON:', error);
       return null;
     }
   } else if (process.env.BITBUCKET_BUILD_NUMBER) { // Check for Bitbucket Pipelines environment
@@ -63,7 +64,7 @@ export function getCIContext(): CIContext | null {
         command: process.env.FALCON_COMMAND || 'review',
       };
     } catch (error) {
-      console.error('Failed to parse Bitbucket environment variables:', error);
+      error('Failed to parse Bitbucket environment variables:', error);
       return null;
     }
   }

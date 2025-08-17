@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { runReview, runSummary } from './reviewer';
 import { createProvider } from './providers';
 import { getCIContext } from './ci-env';
+import { log, error } from './logger';
 
 const program = new Command();
 
@@ -22,7 +23,7 @@ program
   .action(async (options) => {
     // Validate required options are present from either CI or CLI
     if (!options.provider || !options.prNumber || !options.owner || !options.repo || !options.command) {
-      console.error('Error: Missing required options. When running outside of a supported CI environment (like GitHub Actions), you must provide --provider, --pr-number, --owner, and --repo.');
+      error('Error: Missing required options. When running outside of a supported CI environment (like GitHub Actions), you must provide --provider, --pr-number, --owner, and --repo.');
       program.help();
       process.exit(1);
     }
@@ -39,12 +40,12 @@ program
 
     try {
       if (command.includes('--generateSummary')) {
-        console.log('Starting AI PR Summary...');
+        log('Starting AI PR Summary...');
         const userPrompt = command.replace('/falcon-linter --generateSummary', '').replace('--update-body', '').trim();
         await runSummary(provider, userPrompt, options.modelName, options.updateBody);
-        console.log('✅ Summary complete.');
+        log('✅ Summary complete.');
       } else if (command === 'review' || command.includes('--reviewChanges')) {
-        console.log('Starting AI PR Review...');
+        log('Starting AI PR Review...');
         const userPrompt = command.replace('/falcon-linter --reviewChanges', '').trim();
         await runReview(
           provider,
@@ -52,12 +53,12 @@ program
           options.modelName,
           ignoreFiles
         );
-        console.log('✅ Review complete.');
+        log('✅ Review complete.');
       } else {
-        console.log(`Command \"${command}\" not recognized. Skipping.`);
+        log(`Command "${command}" not recognized. Skipping.`);
       }
     } catch (error) {
-      console.error('❌ Error during execution:', error);
+      error('❌ Error during execution:', error);
       process.exit(1);
     }
   });

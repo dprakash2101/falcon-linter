@@ -1,9 +1,10 @@
 import { GitHubProvider } from './GitHubProvider';
 import { BitbucketProvider } from './BitbucketProvider';
 import { GitProvider, ProviderOptions } from '../models/provider';
+import { log, error } from '../logger';
 
 export function createProvider(provider: string, prId: number, options: ProviderOptions): GitProvider {
-  console.log(`Creating provider for: ${provider}`);
+  log(`Creating provider for: ${provider}`);
   if (provider === 'github') {
     if (!options.owner || !options.repo) {
       throw new Error('owner and repo are required for GitHub provider');

@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { GitProvider, ProviderOptions } from '../models/provider';
 import { LinterMetadata } from '../models/metadata';
+import { log, error } from '../logger';
 
 export class GitHubProvider implements GitProvider {
   private octokit: Octokit;
@@ -16,7 +17,7 @@ export class GitHubProvider implements GitProvider {
   }
 
   async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; sourceCommit: string; sourceBranch: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
-    console.log(`Fetching PR details for PR #${this.prNumber}...`);
+    log(`Fetching PR details for PR #${this.prNumber}...`);
     try {
       const { data: pr } = await this.octokit.pulls.get({
         owner: this.owner,
@@ -40,14 +41,14 @@ export class GitHubProvider implements GitProvider {
         owner: this.owner,
         repo: this.repo,
       };
-    } catch (error) {
-      console.error('Failed to fetch PR details:', error);
+    } catch (error: any) {
+      error('Failed to fetch PR details:', error);
       throw error;
     }
   }
 
   async getPullRequestDiff(): Promise<string> {
-    console.log('Fetching PR diff...');
+    log('Fetching PR diff...');
     const { data: diff } = await this.octokit.pulls.get({
       owner: this.owner,
       repo: this.repo,
@@ -73,8 +74,8 @@ export class GitHubProvider implements GitProvider {
         return Buffer.from(data.content, 'base64').toString('utf-8');
       }
       throw new Error(`Could not retrieve content for ${filePath}. Response did not contain content.`);
-    } catch (error) {
-      console.error(`Failed to fetch content for ${filePath} at ref ${ref}:`, error);
+    } catch (err: any) { // Explicitly type error as 'any' for broader catching
+      error(`Failed to fetch content for ${filePath} at ref ${ref}:`, err);
       // Return empty string if file not found (e.g., deleted files in a PR)
       return '';
     }
@@ -88,13 +89,13 @@ export class GitHubProvider implements GitProvider {
       }
     } catch (error) {
       // Silently fail if metadata file is not found or invalid
-      console.log('No valid falcon-linter-metadata.json found. Proceeding with default prompts.');
+      log('No valid falcon-linter-metadata.json found. Proceeding with default prompts.');
     }
     return {}; // Return empty object if no metadata is found
   }
 
   async updatePullRequestBody(newBody: string): Promise<void> {
-    console.log('Updating PR body...');
+    log('Updating PR body...');
     try {
       await this.octokit.pulls.update({
         owner: this.owner,
@@ -102,15 +103,15 @@ export class GitHubProvider implements GitProvider {
         pull_number: this.prNumber,
         body: newBody,
       });
-      console.log('Successfully updated PR body.');
-    } catch (error) {
-      console.error('Failed to update PR body:', error);
+      log('Successfully updated PR body.');
+    } catch (error : any) {
+      error('Failed to update PR body:', error);
       throw error;
     }
   }
 
   async postReview(comment: string): Promise<void> {
-    console.log('Posting review comment...');
+    log('Posting review comment...');
     try {
       await this.octokit.issues.createComment({
         owner: this.owner,
@@ -118,9 +119,9 @@ export class GitHubProvider implements GitProvider {
         issue_number: this.prNumber,
         body: comment,
       });
-      console.log('Successfully posted review comment.');
-    } catch (error) {
-      console.error('Failed to post review comment:', error);
+      log('Successfully posted review comment.');
+    } catch (error : any) {
+      error('Failed to post review comment:', error);
       throw error;
     }
   }
@@ -128,7 +129,7 @@ export class GitHubProvider implements GitProvider {
   // TODO: This is a simplified placeholder. A robust implementation would parse
   // file imports to build a dependency graph and find truly related files.
   async getRelatedFileContent(filePath: string): Promise<Map<string, string>> {
-    console.log(`Fetching related files for ${filePath}... (placeholder logic)`);
+    log(`Fetching related files for ${filePath}... (placeholder logic)`);
     // Placeholder logic: for now, this method does not fetch related files.
     // A real implementation would use glob or an AST parser to find dependencies.
     return new Map<string, string>();

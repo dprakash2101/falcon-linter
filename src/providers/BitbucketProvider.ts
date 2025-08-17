@@ -2,6 +2,7 @@ import { GitProvider } from '../models/provider';
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import config from '../config';
 import { LinterMetadata } from '../models/metadata';
+import { log, error } from '../logger';
 
 export class BitbucketProvider implements GitProvider {
   private client: AxiosInstance;
@@ -44,7 +45,7 @@ export class BitbucketProvider implements GitProvider {
         owner: this.workspace,
         repo: this.repoSlug,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.handleError(error, 'Error fetching PR details');
       throw error; // Re-throw after logging
     }
@@ -54,7 +55,7 @@ export class BitbucketProvider implements GitProvider {
     try {
       const response = await this.client.get(this.getApiUrl('/diff'));
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       this.handleError(error, 'Error fetching PR diff');
       throw error;
     }
@@ -64,7 +65,7 @@ export class BitbucketProvider implements GitProvider {
     try {
       const response = await this.client.get(`https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/src/${ref}/${filePath}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       this.handleError(error, `Could not fetch content for ${filePath}`, false);
       return ''; // Return empty string if content is not available
     }
@@ -76,8 +77,8 @@ export class BitbucketProvider implements GitProvider {
       if (content) {
         return JSON.parse(content) as LinterMetadata;
       }
-    } catch (error) {
-      console.log('No valid falcon-linter-metadata.json found.');
+    } catch (error: any) {
+      log('No valid falcon-linter-metadata.json found.');
     }
     return {};
   }
@@ -85,8 +86,8 @@ export class BitbucketProvider implements GitProvider {
   async updatePullRequestBody(newBody: string): Promise<void> {
     try {
       await this.client.put(this.getApiUrl(), { description: newBody });
-      console.log('Successfully updated PR body.');
-    } catch (error) {
+      log('Successfully updated PR body.');
+    } catch (error: any) {
       this.handleError(error, 'Error updating PR body');
       throw error;
     }
@@ -97,8 +98,8 @@ export class BitbucketProvider implements GitProvider {
       await this.client.post(this.getApiUrl('/comments'), {
         content: { raw: comment },
       });
-      console.log(`Successfully posted review to Bitbucket PR #${this.prId}.`);
-    } catch (error) {
+      log(`Successfully posted review to Bitbucket PR #${this.prId}.`);
+    } catch (error: any) {
       this.handleError(error, 'Error posting review comment');
       throw error;
     }
@@ -106,12 +107,12 @@ export class BitbucketProvider implements GitProvider {
 
   private handleError(error: any, message: string, doThrow: boolean = true) {
     if (axios.isAxiosError(error)) {
-      console.error(`${message}: ${error.message}`);
+      error(`${message}: ${error.message}`);
       if (error.response) {
-        console.error('API Error Response:', error.response.data);
+        error('API Error Response:', error.response.data);
       }
     } else {
-      console.error('Unexpected error:', error);
+      error('Unexpected error:', error);
     }
     if (doThrow) {
       throw new Error(message);

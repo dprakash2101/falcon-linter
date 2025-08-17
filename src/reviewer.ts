@@ -6,6 +6,7 @@ import { StructuredReview } from './models/review';
 import micromatch from 'micromatch';
 import { LinterMetadata } from './models/metadata';
 import { DetailedFileChange } from './models/diff';
+import { log, error } from './logger';
 
 dotenv.config();
 
@@ -49,14 +50,14 @@ const reviewSchema: Schema = {
 };
 
 async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]): Promise<{ changedFiles: FileReviewContext[], relatedFiles: Map<string, string> }> {
-  console.log('Getting detailed diff...');
+  log('Getting detailed diff...');
   const diffContent = await provider.getPullRequestDiff();
   const detailedDiff = getDetailedDiffFromContent(diffContent);
   const { sourceCommit, baseBranch } = await provider.getPullRequestDetails(); // Get baseBranch here
 
   const filteredDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, ignoreFiles));
 
-  console.log('Fetching full content for changed files...');
+  log('Fetching full content for changed files...');
   const changedFiles: FileReviewContext[] = await Promise.all(
     filteredDiff.map(async (file) => {
       let contentRef = sourceCommit; // Default to sourceCommit
@@ -72,7 +73,7 @@ async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]
 
   // TODO: This part is currently a placeholder. The getRelatedFileContent method in the providers
   // needs a real implementation (e.g., using an AST parser) for this to be effective.
-  console.log('Fetching content for related files (placeholder)... ');
+  log('Fetching content for related files (placeholder)... ');
   const relatedFiles = new Map<string, string>();
   // for (const file of changedFiles) {
   //   const related = await provider.getRelatedFileContent(file.filePath);
@@ -88,17 +89,17 @@ export async function runReview(
   modelName: string,
   ignoreFiles: string[],
 ) {
-  console.log(`Starting review with model: ${modelName}`);
+  log(`Starting review with model: ${modelName}`);
   const { title, body, owner, repo, sourceCommit, sourceBranch } = await provider.getPullRequestDetails();
   const metadata = await provider.getMetadata(sourceBranch);
   const { changedFiles, relatedFiles } = await getFullReviewContext(provider, ignoreFiles);
 
   if (changedFiles.length === 0) {
-    console.log('No changes found to review after filtering.');
+    log('No changes found to review after filtering.');
     return;
   }
 
-  console.log('Building intelligent review prompt...');
+  log('Building intelligent review prompt...');
   const promptBuilder = new PromptBuilder(metadata, title, body, changedFiles, relatedFiles);
   const finalPrompt = promptBuilder.buildReviewPrompt(userPrompt);
 
@@ -111,15 +112,15 @@ export async function runReview(
     },
   });
 
-  console.log('Generating structured review... This may take a few moments.');
+  log('Generating structured review... This may take a few moments.');
   const result = await model.generateContent(finalPrompt);
   const structuredReview = JSON.parse(result.response.text()) as StructuredReview;
   
-  console.log('Formatting review to markdown...');
+  log('Formatting review to markdown...');
   const markdownReview = formatReviewToMarkdown(structuredReview, owner, repo, sourceCommit);
 
   if (!markdownReview.trim()) {
-    console.log('Generated review was empty.');
+    log('Generated review was empty.');
     return;
   }
 
@@ -132,34 +133,34 @@ export async function runSummary(
   modelName: string,
   updateBody: boolean
 ) {
-  console.log(`Starting summary with model: ${modelName}`);
+  log(`Starting summary with model: ${modelName}`);
   const { title, body, sourceBranch } = await provider.getPullRequestDetails();
   const metadata = await provider.getMetadata(sourceBranch);
   const { changedFiles } = await getFullReviewContext(provider, []);
 
   if (changedFiles.length === 0) {
-    console.log('No changes found to summarize.');
+    log('No changes found to summarize.');
     return;
   }
 
-  console.log('Building semantic summary prompt...');
+  log('Building semantic summary prompt...');
   const promptBuilder = new PromptBuilder(metadata, title, body, changedFiles, new Map());
   const finalPrompt = promptBuilder.buildSummaryPrompt(userPrompt);
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   const model = genAI.getGenerativeModel({ model: modelName });
 
-  console.log('Generating summary...');
+  log('Generating summary...');
   const result = await model.generateContent(finalPrompt);
   const summaryText = result.response.text();
 
   if (!summaryText.trim()) {
-    console.log('Generated summary was empty.');
+    log('Generated summary was empty.');
     return;
   }
 
   if (updateBody) {
-    console.log('Updating PR body with summary...');
+    log('Updating PR body with summary...');
     const newBody = body ? `${body}\n\n---\n**AI Summary:**\n${summaryText}` : `**AI Summary:**\n${summaryText}`;
     await provider.updatePullRequestBody(newBody);
   } else {
