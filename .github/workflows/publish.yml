@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Publish to NPM
 
 on:
   workflow_dispatch:
@@ -7,9 +7,8 @@ on:
         type: choice
         description: 'Semver bump type'
         required: true
-        default: 'prerelease'
+        default: 'patch'
         options:
-          - prerelease
           - patch
           - minor
           - major
@@ -20,8 +19,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch full history to ensure rebase works
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,15 +37,23 @@ jobs:
           name: dist
           path: dist/
 
-  publish:
+  publish-to-npm:
+    name: Publish to NPM
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # To push version bump commits
+      deployments: write # To create deployments
+    
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/falcon-linter # Will be set dynamically later
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch full history for rebase
-          ref: main # Explicitly checkout the main branch
+          ref: main
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -64,37 +69,61 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.name "${{ secrets.User_Name }}"
-          git config --global user.email "${{ secrets.User_Email }}"
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Bump version
-        run: |
-          VERSION_TYPE=${{ github.event.inputs.version_type }}
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          
-          if [[ "$VERSION_TYPE" == "prerelease" ]]; then
-            if [[ "$CURRENT_VERSION" == 0.* ]]; then
-              npm version patch
-            else
-              echo "Error: 'prerelease' is only for initial development (0.x.y versions)."
-              echo "For stable versions (>=1.0.0), please use 'patch', 'minor', or 'major'."
-              exit 1
-            fi
-          else
-            npm version $VERSION_TYPE
-          fi
+      - name: Create Deployment
+        id: deployment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'npm',
+              required_contexts: [],
+              transient_environment: true,
+              description: 'Publishing to npm'
+            });
+            core.setOutput('deployment_id', data.id);
 
-      - name: Push changes
+      - name: Bump version and Push changes
+        id: version
         run: |
-          git fetch origin main
-          git rebase origin/main
-          git push origin main
-          git push origin --tags
+          npm version ${{ github.event.inputs.version_type }}
+          git push && git push --tags
+          echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
 
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
-        run: npm publish --access public --tag latest
+        run: npm publish --access public
+
+      - name: Update Deployment Status (Success)
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+              state: 'success',
+              environment_url: `https://www.npmjs.com/package/falcon-linter/v/${{ steps.version.outputs.version }}`
+            });
+
+      - name: Update Deployment Status (Failure)
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+              state: 'failure'
+            });
