@@ -62,6 +62,7 @@ export class BitbucketProvider implements GitProvider {
   }
 
   async getFileContent(filePath: string, ref: string): Promise<string> {
+    log(`Fetching content for ${filePath} at ref ${ref}...`);
     try {
       const response = await this.client.get(`https://api.bitbucket.org/2.0/repositories/${this.workspace}/${this.repoSlug}/src/${ref}/${filePath}`);
       return response.data;

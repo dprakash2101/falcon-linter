@@ -62,6 +62,7 @@ export class GitHubProvider implements GitProvider {
   }
 
   async getFileContent(filePath: string, ref: string): Promise<string> {
+    log(`Fetching content for ${filePath} at ref ${ref}...`);
     try {
       const { data } = await this.octokit.repos.getContent({
         owner: this.owner,
