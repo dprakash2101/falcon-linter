@@ -145,7 +145,7 @@ export async function runSummary(
   log(`Starting summary with model: ${modelName}`);
   const { title, body, sourceBranch } = await provider.getPullRequestDetails();
   const metadata = await provider.getMetadata(sourceBranch);
-  const { changedFiles } = await getFullReviewContext(provider, []);
+  const { changedFiles } = await getFullReviewContext(provider, [], metadata);
 
   if (changedFiles.length === 0) {
     log('No changes found to summarize.');
