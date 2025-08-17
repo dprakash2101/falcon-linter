@@ -1,5 +1,4 @@
 name: Build and Publish
-
 on:
   workflow_dispatch:
     inputs:
@@ -13,7 +12,6 @@ on:
           - patch
           - minor
           - major
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,25 +19,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch full history to ensure rebase works
-
+          fetch-depth: 0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Install dependencies
         run: npm ci
-
       - name: Build the project
         run: npm run build
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
-
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -47,34 +40,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch full history for rebase
-          ref: main # Explicitly checkout the main branch
-
+          fetch-depth: 0
+          ref: main
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-
       - name: Configure Git
         run: |
           git config --global user.name "${{ secrets.User_Name }}"
           git config --global user.email "${{ secrets.User_Email }}"
-
       - name: Install dependencies
         run: npm ci
-
       - name: Bump version
-        id: version # Add id to access outputs
+        id: version
+        shell: bash
         run: |
-          VERSION_TYPE=${{ github.event.inputs.version_type }}
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          CURRENT_VERSION="$(node -p "require('./package.json').version")"
           
           if [[ "$VERSION_TYPE" == "prerelease" ]]; then
             if [[ "$CURRENT_VERSION" == 0.* ]]; then
@@ -85,58 +74,65 @@ jobs:
               exit 1
             fi
           else
-            npm version $VERSION_TYPE
+            npm version "$VERSION_TYPE"
           fi
-          echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT # Output the new version
-
+          echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
       - name: Push changes
         run: |
           git fetch origin main
           git rebase origin/main
           git push origin main
           git push origin --tags
-
       - name: Create Deployment
         id: deployment
         uses: actions/github-script@v6
         with:
           script: |
-            const { data } = await github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.ref,
-              environment: 'npm',
-              required_contexts: [],
-              transient_environment: true,
-              description: 'Publishing to npm'
-            });
-            core.setOutput('deployment_id', data.id);
-
+            try {
+              const { data } = await github.rest.repos.createDeployment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: context.ref,
+                environment: 'npm',
+                required_contexts: [],
+                transient_environment: true,
+                description: 'Publishing to npm'
+              });
+              core.setOutput('deployment_id', data.id);
+            } catch (error) {
+              core.setFailed(`Error creating deployment: ${error.message}`);
+            }
       - name: Update Deployment Status (Success)
         if: success()
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
-              state: 'success',
-              environment_url: `https://www.npmjs.com/package/falcon-linter/v/${{ steps.version.outputs.version }}`
-            });
-
+            try {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+                state: 'success',
+                environment_url: `https://www.npmjs.com/package/falcon-linter/v/${{ steps.version.outputs.version }}`
+              });
+            } catch (error) {
+              core.setFailed(`Error updating success status: ${error.message}`);
+            }
       - name: Update Deployment Status (Failure)
         if: failure()
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.deployment_id }},
-              state: 'failure'
-            });
-
+            try {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+                state: 'failure'
+              });
+            } catch (error) {
+              core.setFailed(`Error updating failure status: ${error.message}`);
+            }
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
