@@ -61,24 +61,33 @@ export class GitHubProvider implements GitProvider {
     return diff as unknown as string;
   }
 
-  async getFileContent(filePath: string, ref: string): Promise<string> {
-    log(`Fetching content for ${filePath} at ref ${ref}...`);
+    async getFileContent(
+    filePath: string,
+    ref: string,
+  ): Promise<string> {
     try {
-      const { data } = await this.octokit.repos.getContent({
+      const response = await this.octokit.repos.getContent({
         owner: this.owner,
         repo: this.repo,
         path: filePath,
-        ref: ref, // Branch, SHA, or tag
+        ref,
       });
 
-      if ('content' in data) {
-        return Buffer.from(data.content, 'base64').toString('utf-8');
+      if (Array.isArray(response.data)) {
+        throw new Error(`${filePath} is a directory, not a file.`);
       }
-      throw new Error(`Could not retrieve content for ${filePath}. Response did not contain content.`);
-    } catch (err: any) { // Explicitly type error as 'any' for broader catching
-      error(`Failed to fetch content for ${filePath} at ref ${ref}:`, err);
-      // Return empty string if file not found (e.g., deleted files in a PR)
-      return '';
+
+      if (response.data.type !== 'file' || response.data.content === undefined) {
+        throw new Error(`Could not get content for ${filePath}.`);
+      }
+
+      return Buffer.from(response.data.content, response.data.encoding as BufferEncoding).toString();
+    } catch (error: any) {
+      if (error.status === 404) {
+        // If the file is not found, return an empty string
+        return '';
+      }
+      throw error;
     }
   }
 
