@@ -86,7 +86,7 @@ export class PromptBuilder {
       Diff:
       ${f.fileDiff}
       Full Content:
-      ${f.fullContent}
+      ${f.fileContent}
     `).join('\n---\n');
     }
 
@@ -97,7 +97,7 @@ export class PromptBuilder {
       Diff:
       ${f.fileDiff}
       Full Content:
-      ${f.fullContent}
+      ${f.fileContent}
     `).join('\n---\n');
     }
 
@@ -108,7 +108,7 @@ export class PromptBuilder {
       Diff:
       ${f.fileDiff}
       Full Content:
-      ${f.fullContent}
+      ${f.fileContent}
     `).join('\n---\n');
     }
 
@@ -119,7 +119,7 @@ export class PromptBuilder {
       Diff:
       ${f.fileDiff}
       Content Before Deletion: 
-      ${f.fullContent}
+      ${f.previousFileContent}
     `).join('\n---\n');
     }
 

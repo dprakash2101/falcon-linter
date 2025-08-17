@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/rest';
+import { RequestError } from '@octokit/request-error';
 import { GitProvider, ProviderOptions } from '../models/provider';
 import { LinterMetadata } from '../models/metadata';
 
@@ -74,9 +75,13 @@ export class GitHubProvider implements GitProvider {
       }
       throw new Error(`Could not retrieve content for ${filePath}. Response did not contain content.`);
     } catch (error) {
+      if (error instanceof RequestError && error.status === 404) {
+        console.log(`File not found: ${filePath} at ref ${ref}. Returning empty content.`);
+        return ''; // Return empty string for 404 errors
+      }
+      // For other errors, re-throw or handle as appropriate
       console.error(`Failed to fetch content for ${filePath} at ref ${ref}:`, error);
-      // Return empty string if file not found (e.g., deleted files in a PR)
-      return '';
+      throw error; // Re-throw other errors
     }
   }
 

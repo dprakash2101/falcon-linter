@@ -10,7 +10,8 @@ import { DetailedFileChange } from './models/diff';
 dotenv.config();
 
 export interface FileReviewContext extends DetailedFileChange {
-  fullContent: string;
+  fileContent?: string;
+  previousFileContent?: string;
 }
 
 // The schema for the structured review JSON output
@@ -59,15 +60,23 @@ async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]
   console.log('Fetching full content for changed files...');
   const changedFiles: FileReviewContext[] = await Promise.all(
     filteredDiff.map(async (file) => {
-      let contentRef = sourceCommit; // Default to sourceCommit
+      let fileContent: string | undefined;
+      let previousFileContent: string | undefined;
+
       if (file.status === 'deleted') {
-        contentRef = baseBranch; // For deleted files, fetch from baseBranch
+        // For deleted files, fetch content from the base branch
+        previousFileContent = await provider.getFileContent(file.filePath, baseBranch);
+      } else if (file.status === 'added') {
+        // For added files, fetch content from the source commit
+        fileContent = await provider.getFileContent(file.filePath, sourceCommit);
+      } else if (file.status === 'modified' || file.status === 'renamed') {
+        // For modified or renamed files, fetch both
+        fileContent = await provider.getFileContent(file.filePath, sourceCommit);
+        previousFileContent = await provider.getFileContent(file.previousFilePath || file.filePath, baseBranch);
       }
-      return {
-        ...file,
-        fullContent: await provider.getFileContent(file.filePath, contentRef),
-      };
-    })
+
+      return { ...file, fileContent, previousFileContent };
+    }),
   );
 
   // TODO: This part is currently a placeholder. The getRelatedFileContent method in the providers
