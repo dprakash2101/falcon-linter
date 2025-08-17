@@ -52,6 +52,8 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
       - name: Configure Git
         run: |
           git config --global user.name "${{ secrets.User_Name }}"
@@ -63,20 +65,20 @@ jobs:
         shell: bash
         run: |
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
-          CURRENT_VERSION="$(node -p "require('./package.json').version")"
+          CURRENT_VERSION="$(jq -r .version package.json)"
           
           if [[ "$VERSION_TYPE" == "prerelease" ]]; then
             if [[ "$CURRENT_VERSION" == 0.* ]]; then
               npm version patch
             else
-              echo "Error: 'prerelease' is only for initial development (0.x.y versions)."
-              echo "For stable versions (>=1.0.0), please use 'patch', 'minor', or 'major'."
+              echo "Error: 'prerelease' is only for initial development - 0.x.y versions."
+              echo "For stable versions - >=1.0.0, please use 'patch', 'minor', or 'major'."
               exit 1
             fi
           else
             npm version "$VERSION_TYPE"
           fi
-          echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+          echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
       - name: Push changes
         run: |
           git fetch origin main
@@ -100,7 +102,7 @@ jobs:
               });
               core.setOutput('deployment_id', data.id);
             } catch (error) {
-              core.setFailed(`Error creating deployment: ${error.message}`);
+              core.setFailed(`Error: ${error.message}`);
             }
       - name: Update Deployment Status (Success)
         if: success()
@@ -111,12 +113,12 @@ jobs:
               await github.rest.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+                deployment_id: ${{ toJSON(steps.deployment.outputs.deployment_id) }},
                 state: 'success',
-                environment_url: `https://www.npmjs.com/package/falcon-linter/v/${{ steps.version.outputs.version }}`
+                environment_url: `https://www.npmjs.com/package/falcon-linter/v/${{ toJSON(steps.version.outputs.version) }}`
               });
             } catch (error) {
-              core.setFailed(`Error updating success status: ${error.message}`);
+              core.setFailed(`Error: ${error.message}`);
             }
       - name: Update Deployment Status (Failure)
         if: failure()
@@ -127,11 +129,11 @@ jobs:
               await github.rest.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: ${{ steps.deployment.outputs.deployment_id }},
+                deployment_id: ${{ toJSON(steps.deployment.outputs.deployment_id) }},
                 state: 'failure'
               });
             } catch (error) {
-              core.setFailed(`Error updating failure status: ${error.message}`);
+              core.setFailed(`Error: ${error.message}`);
             }
       - name: Publish to npm
         env:
