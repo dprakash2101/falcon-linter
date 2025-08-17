@@ -8,4 +8,5 @@ export interface LinterMetadata {
     review?: string;
     summary?: string;
   };
+  ignoredExtensions?: string[];
 }

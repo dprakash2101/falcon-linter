@@ -36,6 +36,13 @@
           "type": "string"
         }
       }
+    },
+    "ignoredExtensions": {
+      "description": "A list of file extensions (without the leading dot) to ignore during the review process (e.g., [\"yml\", \"js\", \"map\"]).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }
