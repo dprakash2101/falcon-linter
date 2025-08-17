@@ -1,4 +1,4 @@
-# Falcon Linter: Your AI-Powered Senior Engineer
+# Falcon Linter
 
 <p align="center">
   <b>An intelligent CLI assistant that provides expert-level code reviews and semantic summaries for your pull requests.</b>
