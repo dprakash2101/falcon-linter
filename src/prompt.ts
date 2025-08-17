@@ -66,13 +66,29 @@ export class PromptBuilder {
       Repository Instructions: ${customReviewPrompt || 'None'}
     `;
 
-    const filesToReview = this.files.map(f => `
-      File: ${f.filePath}
+    const filesToReview = this.files.map(f => {
+        let statusText = '';
+        if (f.status === 'added') {
+          statusText = '(New File)';
+        } else if (f.status === 'modified') {
+          statusText = '(Updated File)';
+        } else if (f.status === 'renamed') {
+          statusText = '(Renamed File)';
+        }
+        // For deleted files, we are not including their full content in the review prompt,
+        // but we can still mention them in the overall PR context if needed.
+        // However, for the detailed file review, we exclude them as per previous discussion.
+
+        return `
+      File: ${f.filePath} ${statusText}
       Diff:
       ${f.fileDiff}
       Full Content:
       ${f.fullContent}
-    `).join('\n---\n');
+    `;
+      }).join('
+---
+');
 
     let relatedFilesContext = 'For additional context, here is the content of potentially related files. Use this to check for breaking changes:\n';
     if (this.relatedFiles.size > 0) {

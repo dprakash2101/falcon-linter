@@ -15,7 +15,7 @@ export class GitHubProvider implements GitProvider {
     this.prNumber = prNumber;
   }
 
-  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; sourceCommit: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
+  async getPullRequestDetails(): Promise<{ title: string; body: string; baseBranch: string; sourceCommit: string; sourceBranch: string; labels: string[]; relatedIssues: string[]; author: string; owner: string; repo: string; }> {
     console.log(`Fetching PR details for PR #${this.prNumber}...`);
     try {
       const { data: pr } = await this.octokit.pulls.get({
@@ -33,6 +33,7 @@ export class GitHubProvider implements GitProvider {
         body: pr.body || '',
         baseBranch: pr.base.ref,
         sourceCommit: pr.head.sha, // Add the source commit SHA
+        sourceBranch: pr.head.ref,
         labels,
         relatedIssues,
         author: pr.user.login,
@@ -79,9 +80,9 @@ export class GitHubProvider implements GitProvider {
     }
   }
 
-  async getMetadata(): Promise<LinterMetadata> {
+  async getMetadata(ref: string): Promise<LinterMetadata> {
     try {
-      const content = await this.getFileContent('falcon-linter-metadata.json', 'HEAD');
+      const content = await this.getFileContent('falcon-linter-metadata.json', ref);
       if (content) {
         return JSON.parse(content) as LinterMetadata;
       }

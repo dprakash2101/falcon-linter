@@ -37,6 +37,7 @@ jobs:
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "command_text=review" >> $GITHUB_OUTPUT
           else
+            # For issue_comment events, use the comment body as the command
             echo "command_text=\"${{ github.event.comment.body }}\"" >> $GITHUB_OUTPUT
           fi
 

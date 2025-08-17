@@ -52,16 +52,22 @@ async function getFullReviewContext(provider: GitProvider, ignoreFiles: string[]
   console.log('Getting detailed diff...');
   const diffContent = await provider.getPullRequestDiff();
   const detailedDiff = getDetailedDiffFromContent(diffContent);
-  const { sourceCommit } = await provider.getPullRequestDetails();
+  const { sourceCommit, baseBranch } = await provider.getPullRequestDetails(); // Get baseBranch here
 
   const filteredDiff = detailedDiff.filter(file => !micromatch.isMatch(file.filePath, ignoreFiles));
 
   console.log('Fetching full content for changed files...');
   const changedFiles: FileReviewContext[] = await Promise.all(
-    filteredDiff.map(async (file) => ({
-      ...file,
-      fullContent: await provider.getFileContent(file.filePath, sourceCommit),
-    }))
+    filteredDiff.map(async (file) => {
+      let contentRef = sourceCommit; // Default to sourceCommit
+      if (file.status === 'deleted') {
+        contentRef = baseBranch; // For deleted files, fetch from baseBranch
+      }
+      return {
+        ...file,
+        fullContent: await provider.getFileContent(file.filePath, contentRef),
+      };
+    })
   );
 
   // TODO: This part is currently a placeholder. The getRelatedFileContent method in the providers
@@ -83,8 +89,8 @@ export async function runReview(
   ignoreFiles: string[],
 ) {
   console.log(`Starting review with model: ${modelName}`);
-  const metadata = await provider.getMetadata();
-  const { title, body, owner, repo, sourceCommit } = await provider.getPullRequestDetails();
+  const { title, body, owner, repo, sourceCommit, sourceBranch } = await provider.getPullRequestDetails();
+  const metadata = await provider.getMetadata(sourceBranch);
   const { changedFiles, relatedFiles } = await getFullReviewContext(provider, ignoreFiles);
 
   if (changedFiles.length === 0) {
@@ -127,19 +133,17 @@ export async function runSummary(
   updateBody: boolean
 ) {
   console.log(`Starting summary with model: ${modelName}`);
-  const metadata = await provider.getMetadata();
-  const { title, body } = await provider.getPullRequestDetails();
-  const diffContent = await provider.getPullRequestDiff();
-  const detailedDiff = getDetailedDiffFromContent(diffContent);
-  const fileContexts = detailedDiff.map(d => ({ ...d, fullContent: '' }));
+  const { title, body, sourceBranch } = await provider.getPullRequestDetails();
+  const metadata = await provider.getMetadata(sourceBranch);
+  const { changedFiles } = await getFullReviewContext(provider, []);
 
-  if (fileContexts.length === 0) {
+  if (changedFiles.length === 0) {
     console.log('No changes found to summarize.');
     return;
   }
 
   console.log('Building semantic summary prompt...');
-  const promptBuilder = new PromptBuilder(metadata, title, body, fileContexts, new Map());
+  const promptBuilder = new PromptBuilder(metadata, title, body, changedFiles, new Map());
   const finalPrompt = promptBuilder.buildSummaryPrompt(userPrompt);
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
@@ -198,10 +202,34 @@ function getDetailedDiffFromContent(diffContent: string): DetailedFileChange[] {
     const lines = file.split('\n');
     const filePathLine = lines[0];
     const filePathMatch = filePathLine.match(/^a\/(.+) b\/(.+)$/);
-    if (!filePathMatch) continue;
 
-    const filePath = filePathMatch[2];
-    detailedChanges.push({ filePath, fileDiff: file });
+    let filePath = '';
+    let status: 'added' | 'modified' | 'deleted' | 'renamed' = 'modified'; // Default to modified
+
+    if (filePathMatch) {
+      const oldPath = filePathMatch[1];
+      const newPath = filePathMatch[2];
+
+      if (oldPath === '/dev/null') {
+        filePath = newPath;
+        status = 'added';
+      } else if (newPath === '/dev/null') {
+        filePath = oldPath;
+        status = 'deleted';
+      } else {
+        filePath = newPath;
+        // Check for rename
+        if (file.includes('rename from') && file.includes('rename to')) {
+          status = 'renamed';
+        }
+      }
+    } else {
+      // Handle cases where filePathMatch doesn't work, e.g., binary files or malformed diffs
+      // For now, we'll skip these or assign a default status if necessary.
+      continue;
+    }
+
+    detailedChanges.push({ filePath, fileDiff: file, status });
   }
 
   return detailedChanges;
